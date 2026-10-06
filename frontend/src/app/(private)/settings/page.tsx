@@ -18,7 +18,7 @@ import { useToast } from '@/context/ToastContext';
 import { useAuth } from '@/context/AuthContext';
 
 export default function SettingsPage() {
-  const { user, logout } = useAuth();
+  const { user, logout, changePassword } = useAuth();
   const { showToast } = useToast();
   const router = useRouter();
 
@@ -58,25 +58,14 @@ export default function SettingsPage() {
 
     setIsUpdatingPassword(true);
     try {
-      // Simulate password update
-      await new Promise((resolve) => setTimeout(resolve, 800));
+      await changePassword(currentPassword, newPassword);
 
-      showToast({
-        type: 'success',
-        title: 'Password Updated',
-        message: 'Your sanctuary patron password has been successfully updated.',
-      });
-
-      // Clear fields
+      // Clear fields on success
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
-    } catch (err) {
-      showToast({
-        type: 'error',
-        title: 'Update Failed',
-        message: 'Could not update password. Please try again.',
-      });
+    } catch (err: any) {
+      setPasswordError(err.message || 'Could not update password. Please check your current password.');
     } finally {
       setIsUpdatingPassword(false);
     }

@@ -24,9 +24,11 @@ export default function CheckoutPage() {
   const [isProcessing, setIsProcessing] = useState(false);
 
   // Step 1: Customer Information
-  const [name, setName] = useState(user?.name || '');
+  const [firstName, setFirstName] = useState(user?.firstName || user?.name?.split(' ')?.[0] || '');
+  const [lastName, setLastName] = useState(user?.lastName || user?.name?.split(' ')?.slice(1).join(' ') || '');
   const [email, setEmail] = useState(user?.email || '');
   const [phone, setPhone] = useState(user?.phone || '');
+  const fullName = `${firstName} ${lastName}`.trim() || 'Valued Customer';
 
   // Step 2: Delivery Details
   const [street, setStreet] = useState(user?.addresses?.[0]?.street || '');
@@ -56,7 +58,7 @@ export default function CheckoutPage() {
   const currentAddress: Address = {
     id: `addr-${Date.now()}`,
     label: 'Checkout Destination',
-    recipientName: name,
+    recipientName: fullName,
     phone,
     street,
     apartment,
@@ -69,8 +71,8 @@ export default function CheckoutPage() {
 
   const handleStep1Submit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !email || !phone) {
-      showToast({ type: 'error', title: 'Please fill in all customer details' });
+    if (!firstName.trim() || !lastName.trim() || !email || !phone) {
+      showToast({ type: 'error', title: 'Please fill in first name, last name, and contact details' });
       return;
     }
     setStep(2);
@@ -96,8 +98,8 @@ export default function CheckoutPage() {
           items: items.map(i => `${i.product.name} (${i.quantity})`).join(', '),
           amount: total,
           currency: 'LKR',
-          firstName: name.split(' ')[0] || name,
-          lastName: name.split(' ')[1] || 'Customer',
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
           email,
           phone,
           address: street,
@@ -114,7 +116,7 @@ export default function CheckoutPage() {
         const createdOrder = await orderService.createOrder({
           customer: {
             id: user?.id || `cust-${Date.now()}`,
-            name,
+            name: fullName,
             email,
             phone,
           },
@@ -145,7 +147,7 @@ export default function CheckoutPage() {
         const createdOrder = await orderService.createOrder({
           customer: {
             id: user?.id || `cust-${Date.now()}`,
-            name,
+            name: fullName,
             email,
             phone,
           },
@@ -177,7 +179,7 @@ export default function CheckoutPage() {
           discount,
           shipping,
           total,
-          customerName: name,
+          customerName: fullName,
           customerPhone: phone,
           customerEmail: email,
           address: currentAddress,
@@ -248,13 +250,22 @@ export default function CheckoutPage() {
               </p>
 
               <div className="space-y-4">
-                <Input
-                  label="Full Name"
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. Puvanakopis"
-                />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Input
+                    label="First Name"
+                    required
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    placeholder="e.g. Puvanakopis"
+                  />
+                  <Input
+                    label="Last Name"
+                    required
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    placeholder="e.g. S."
+                  />
+                </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Input
                     label="Email Address"
@@ -451,7 +462,7 @@ export default function CheckoutPage() {
                       discount,
                       shipping,
                       total,
-                      customerName: name,
+                      customerName: fullName,
                       customerPhone: phone,
                       customerEmail: email,
                       address: currentAddress,

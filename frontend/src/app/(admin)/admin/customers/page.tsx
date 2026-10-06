@@ -36,7 +36,8 @@ export default function AdminCustomersAndUsersPage() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   // New User Form State
-  const [newName, setNewName] = useState('');
+  const [newFirstName, setNewFirstName] = useState('');
+  const [newLastName, setNewLastName] = useState('');
   const [newEmail, setNewEmail] = useState('');
   const [newPhone, setNewPhone] = useState('');
   const [newRole, setNewRole] = useState<'customer' | 'admin'>('customer');
@@ -90,14 +91,17 @@ export default function AdminCustomersAndUsersPage() {
 
   const handleCreateUser = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newName || !newEmail) {
-      showToast({ type: 'error', title: 'Please provide name and email' });
+    if (!newFirstName.trim() || !newLastName.trim() || !newEmail) {
+      showToast({ type: 'error', title: 'Please provide first name, last name, and email' });
       return;
     }
 
+    const fullName = `${newFirstName.trim()} ${newLastName.trim()}`;
     const newUser: Customer = {
       id: `usr-${Date.now()}`,
-      name: newName,
+      firstName: newFirstName.trim(),
+      lastName: newLastName.trim(),
+      name: fullName,
       email: newEmail,
       phone: newPhone || '+94 77 000 0000',
       role: newRole,
@@ -112,11 +116,12 @@ export default function AdminCustomersAndUsersPage() {
     showToast({
       type: 'success',
       title: 'Account Created',
-      message: `${newName} has been added as ${newRole === 'admin' ? 'Staff Administrator' : 'Registered Patron'}.`
+      message: `${fullName} has been added as ${newRole === 'admin' ? 'Staff Administrator' : 'Registered Patron'}.`
     });
 
     setIsAddModalOpen(false);
-    setNewName('');
+    setNewFirstName('');
+    setNewLastName('');
     setNewEmail('');
     setNewPhone('');
     setNewRole('customer');
@@ -338,13 +343,22 @@ export default function AdminCustomersAndUsersPage() {
         maxWidth="md"
       >
         <form onSubmit={handleCreateUser} className="space-y-4 text-xs">
-          <Input
-            label="Full Name"
-            placeholder="e.g. Priyantha Silva"
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            required
-          />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Input
+              label="First Name"
+              placeholder="e.g. Priyantha"
+              value={newFirstName}
+              onChange={(e) => setNewFirstName(e.target.value)}
+              required
+            />
+            <Input
+              label="Last Name"
+              placeholder="e.g. Silva"
+              value={newLastName}
+              onChange={(e) => setNewLastName(e.target.value)}
+              required
+            />
+          </div>
 
           <Input
             label="Email Address"

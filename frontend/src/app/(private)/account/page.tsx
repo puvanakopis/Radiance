@@ -28,7 +28,8 @@ export default function AccountPage() {
   const router = useRouter();
 
   // Profile Form State
-  const [editName, setEditName] = useState('');
+  const [editFirstName, setEditFirstName] = useState('');
+  const [editLastName, setEditLastName] = useState('');
   const [editEmail, setEditEmail] = useState('');
   const [editPhone, setEditPhone] = useState('');
   const [isSavingProfile, setIsSavingProfile] = useState(false);
@@ -48,7 +49,10 @@ export default function AccountPage() {
 
   useEffect(() => {
     if (user) {
-      setEditName(user.name || '');
+      const fName = user.firstName || user.name?.split(' ')?.[0] || '';
+      const lName = user.lastName || user.name?.split(' ')?.slice(1).join(' ') || '';
+      setEditFirstName(fName);
+      setEditLastName(lName);
       setEditEmail(user.email || '');
       setEditPhone(user.phone || '');
       setNewRecipient(user.name || '');
@@ -65,7 +69,9 @@ export default function AccountPage() {
     setIsSavingProfile(true);
     try {
       await updateProfile({
-        name: editName,
+        firstName: editFirstName.trim(),
+        lastName: editLastName.trim(),
+        name: `${editFirstName.trim()} ${editLastName.trim()}`,
         email: editEmail,
         phone: editPhone,
       });
@@ -172,18 +178,34 @@ export default function AccountPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="text-[10px] uppercase tracking-wider font-semibold text-[#1A1A1A]/60 block">
-                  Full Name
+                  First Name
                 </label>
                 <input
                   type="text"
                   required
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  placeholder="e.g. Eleanor Vance"
+                  value={editFirstName}
+                  onChange={(e) => setEditFirstName(e.target.value)}
+                  placeholder="e.g. Eleanor"
                   className="w-full p-3.5 rounded-2xl bg-[#FAF8F5] border border-[#1A1A1A]/10 text-xs text-[#1A1A1A] outline-none focus:border-[#C87D55] focus:bg-white transition-all"
                 />
               </div>
 
+              <div className="space-y-1.5">
+                <label className="text-[10px] uppercase tracking-wider font-semibold text-[#1A1A1A]/60 block">
+                  Last Name
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editLastName}
+                  onChange={(e) => setEditLastName(e.target.value)}
+                  placeholder="e.g. Vance"
+                  className="w-full p-3.5 rounded-2xl bg-[#FAF8F5] border border-[#1A1A1A]/10 text-xs text-[#1A1A1A] outline-none focus:border-[#C87D55] focus:bg-white transition-all"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="text-[10px] uppercase tracking-wider font-semibold text-[#1A1A1A]/60 block">
                   Email Address
@@ -197,9 +219,7 @@ export default function AccountPage() {
                   className="w-full p-3.5 rounded-2xl bg-[#FAF8F5] border border-[#1A1A1A]/10 text-xs text-[#1A1A1A] outline-none focus:border-[#C87D55] focus:bg-white transition-all"
                 />
               </div>
-            </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="text-[10px] uppercase tracking-wider font-semibold text-[#1A1A1A]/60 block">
                   Contact Phone Number
@@ -213,20 +233,20 @@ export default function AccountPage() {
                   className="w-full p-3.5 rounded-2xl bg-[#FAF8F5] border border-[#1A1A1A]/10 text-xs text-[#1A1A1A] outline-none focus:border-[#C87D55] focus:bg-white transition-all"
                 />
               </div>
+            </div>
 
-              <div className="space-y-1.5">
-                <label className="text-[10px] uppercase tracking-wider font-semibold text-[#1A1A1A]/60 block">
-                  Patron Status
-                </label>
-                <div className="w-full p-3.5 rounded-2xl bg-[#FAF8F5] border border-[#1A1A1A]/10 text-xs text-[#1A1A1A]/60 flex items-center justify-between">
-                  <span className="flex items-center gap-2">
-                    <Calendar className="w-3.5 h-3.5 text-[#8A9A86]" />
-                    <span>Active Member Since {user.createdAt || '2025'}</span>
-                  </span>
-                  <span className="text-[10px] font-semibold text-[#8A9A86] uppercase tracking-wider">
-                    Verified
-                  </span>
-                </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] uppercase tracking-wider font-semibold text-[#1A1A1A]/60 block">
+                Patron Status
+              </label>
+              <div className="w-full p-3.5 rounded-2xl bg-[#FAF8F5] border border-[#1A1A1A]/10 text-xs text-[#1A1A1A]/60 flex items-center justify-between">
+                <span className="flex items-center gap-2">
+                  <Calendar className="w-3.5 h-3.5 text-[#8A9A86]" />
+                  <span>Active Member Since {user.createdAt || '2025'}</span>
+                </span>
+                <span className="text-[10px] font-semibold text-[#8A9A86] uppercase tracking-wider">
+                  Verified
+                </span>
               </div>
             </div>
 
