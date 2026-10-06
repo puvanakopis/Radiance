@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button';
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen bg-[#FAF8F5] text-[#1A1A1A] flex flex-col items-center justify-center p-6 text-center">
+    <div className="min-h-[70vh] bg-[#FAF8F5] text-[#1A1A1A] flex flex-col items-center justify-center p-6 text-center">
       <div className="max-w-md space-y-6">
         <span className="text-[10px] uppercase tracking-[0.25em] font-medium text-[#C87D55] block">
           Formulation Not Found

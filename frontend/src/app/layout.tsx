@@ -1,6 +1,10 @@
 import type { Metadata } from 'next';
 import './globals.css';
-import { Providers } from './providers';
+import { AuthProvider } from '@/context/AuthContext';
+import { CartProvider } from '@/context/CartContext';
+import { WishlistProvider } from '@/context/WishlistContext';
+import { ToastProvider } from '@/context/ToastContext';
+import { CartDrawer } from '@/components/cart/CartDrawer';
 
 export const metadata: Metadata = {
   title: 'VELORA | Conscious Botanical Skincare & Luxury Beauty Rituals',
@@ -26,7 +30,16 @@ export default function RootLayout({
       <body className="min-h-screen bg-[#FAF8F5] text-[#1A1A1A] antialiased selection:bg-[#C87D55]/20 selection:text-[#1A1A1A]">
         {/* Subtle Luxury Film Grain Overlay */}
         <div className="grain-overlay" aria-hidden="true" />
-        <Providers>{children}</Providers>
+        <ToastProvider>
+          <AuthProvider>
+            <WishlistProvider>
+              <CartProvider>
+                {children}
+                <CartDrawer />
+              </CartProvider>
+            </WishlistProvider>
+          </AuthProvider>
+        </ToastProvider>
       </body>
     </html>
   );
