@@ -40,6 +40,4 @@ skills-lock.json
 
 *.tsbuildinfo
 
-# Backend
-backend/
 

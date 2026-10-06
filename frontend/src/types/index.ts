@@ -72,8 +72,12 @@ export interface Address {
   isDefault: boolean;
 }
 
+export * from './auth.interface';
+
 export interface Customer {
   id: string;
+  firstName?: string;
+  lastName?: string;
   name: string;
   email: string;
   phone: string;

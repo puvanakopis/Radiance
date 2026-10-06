@@ -1,4 +1,4 @@
-import { Product, Category, Review, Order, Customer } from '../types';
+import { Product, Category, Review, Order } from '../types';
 
 export const mockCategories: Category[] = [
   {
@@ -686,41 +686,3 @@ export const mockOrders: Order[] = [
   }
 ];
 
-export const mockCurrentUser: Customer = {
-  id: 'cust-01',
-  name: 'Puvanakopis',
-  email: 'puvana@velora.lk',
-  phone: '+94 77 123 4567',
-  role: 'customer',
-  avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
-  totalOrders: 3,
-  totalSpend: 56900,
-  createdAt: '2026-01-01',
-  addresses: [
-    {
-      id: 'addr-01',
-      label: 'Home',
-      recipientName: 'Puvanakopis',
-      phone: '+94 77 123 4567',
-      street: '42 Lotus Road, Havelock Town',
-      apartment: 'Apt 4B',
-      city: 'Colombo',
-      district: 'Colombo',
-      postalCode: '00500',
-      country: 'Sri Lanka',
-      isDefault: true
-    },
-    {
-      id: 'addr-02',
-      label: 'Studio',
-      recipientName: 'Puvanakopis',
-      phone: '+94 77 123 4567',
-      street: '15 Independence Avenue',
-      city: 'Colombo',
-      district: 'Colombo',
-      postalCode: '00700',
-      country: 'Sri Lanka',
-      isDefault: false
-    }
-  ]
-};

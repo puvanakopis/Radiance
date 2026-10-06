@@ -1,5 +1,5 @@
 import { AdminStats, Customer, Order, Product } from '@/types';
-import { mockCurrentUser, mockOrders, mockProducts } from '@/data/mockProducts';
+import { mockOrders, mockProducts } from '@/data/mockProducts';
 import { productService } from './productService';
 import { orderService } from './orderService';
 
@@ -46,7 +46,6 @@ class AdminService {
   async getAllCustomers(): Promise<Customer[]> {
     await delay(100);
     return [
-      mockCurrentUser,
       {
         id: 'cust-02',
         name: 'Ananya Mendis',
