@@ -13,7 +13,7 @@ interface WishlistContextType {
   clearWishlist: () => void;
 }
 
-const STORAGE_KEY = 'velora_wishlist_items';
+const STORAGE_KEY = 'skinova_wishlist_items';
 
 const WishlistContext = createContext<WishlistContextType | undefined>(undefined);
 

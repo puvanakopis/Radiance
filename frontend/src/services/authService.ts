@@ -8,7 +8,7 @@ import {
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 const TOKEN_STORAGE_KEY = 'skinova_jwt_token';
-const USER_STORAGE_KEY = 'velora_user';
+const USER_STORAGE_KEY = 'skinova_user';
 
 class AuthService {
   private currentUser: Customer | null = null;

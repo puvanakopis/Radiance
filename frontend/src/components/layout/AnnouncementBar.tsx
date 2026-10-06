@@ -8,7 +8,7 @@ const announcements = [
   'Islandwide Express Delivery • Direct to Doorstep across Sri Lanka',
   'Crafted in Sri Lanka with pure bio-compatible botanical actives',
   '100% Cruelty-Free • Paraben-Free • Dermatologist Formulated',
-  'Special Launch Voucher: Use code "VELORA10" for 10% off your first ritual'
+  'Special Launch Voucher: Use code "SKINOVA10" for 10% off your first ritual'
 ];
 
 interface AnnouncementBarProps {

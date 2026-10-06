@@ -64,7 +64,7 @@ export const ProductReviewSection: React.FC<ProductReviewSectionProps> = ({
     showToast({
       type: 'success',
       title: 'Review submitted',
-      message: 'Thank you for sharing your experience with the Velora community.',
+      message: 'Thank you for sharing your experience with the Skinova community.',
     });
   };
 

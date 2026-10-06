@@ -13,7 +13,7 @@ export const ENV = {
   FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:3000',
 
   // Database
-  DATABASE_URL: process.env.DATABASE_URL || 'mongodb://localhost:27017/skinova_db',
+  DATABASE_URL: process.env.DATABASE_URL || 'mongodb://localhost:27017/skinova',
 
   // JWT Auth
   JWT_SECRET: process.env.JWT_SECRET || 'skinova_dev_secret_key_change_in_production_2026',
@@ -37,5 +37,5 @@ export const ENV = {
   SMTP_USER: process.env.SMTP_USER || '',
   SMTP_PASS: process.env.SMTP_PASS || '',
   SMTP_SECURE: process.env.SMTP_SECURE === 'true',
-  SMTP_FROM: process.env.SMTP_FROM || '"Velora Botanical Skincare" <noreply@velora.lk>',
+  SMTP_FROM: process.env.SMTP_FROM || '"Skinova Botanical Skincare" <noreply@skinova.lk>',
 };

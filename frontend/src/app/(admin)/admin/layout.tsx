@@ -40,7 +40,7 @@ export default function AdminLayout({
           <div className="flex items-center justify-between">
             <Link href="/" className="group">
               <span className="font-serif text-2xl tracking-[0.2em] font-medium text-[#FAF8F5] group-hover:text-[#C87D55] transition-colors">
-                VELORA
+                SKINOVA
               </span>
               <span className="text-[8px] uppercase tracking-[0.25em] text-[#FAF8F5]/50 block">
                 Command Sanctuary

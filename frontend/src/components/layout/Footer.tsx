@@ -16,7 +16,7 @@ export const Footer: React.FC = () => {
           <div className="col-span-2 space-y-4">
             <Link href="/" className="inline-block">
               <span className="font-serif text-2xl tracking-[0.2em] font-medium text-[#FAF8F5]">
-                VELORA
+                SKINOVA
               </span>
               <span className="text-[8px] uppercase tracking-[0.25em] text-[#FAF8F5]/50 block mt-0.5">
                 Botanical Aesthetics • Colombo
@@ -136,7 +136,7 @@ export const Footer: React.FC = () => {
 
         {/* Bottom copyright & legal */}
         <div className="pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-[#FAF8F5]/40">
-          <p>© {new Date().getFullYear()} VELORA BOTANICALS (PVT) LTD. ALL RIGHTS RESERVED.</p>
+          <p>© {new Date().getFullYear()} SKINOVA BOTANICALS (PVT) LTD. ALL RIGHTS RESERVED.</p>
           <div className="flex items-center space-x-6">
             <span className="hover:text-[#FAF8F5] transition-colors cursor-pointer">
               Privacy Policy

@@ -218,7 +218,7 @@ export default function CartPage() {
                     type="text"
                     value={couponCode}
                     onChange={(e) => setCouponCode(e.target.value)}
-                    placeholder="Coupon code (e.g. VELORA10)"
+                    placeholder="Coupon code (e.g. SKINOVA10)"
                     className="flex-1 bg-[#FAF8F5] border border-[#1A1A1A]/15 rounded-xl px-3.5 py-2.5 text-xs text-[#1A1A1A] outline-none focus:border-[#1A1A1A]"
                   />
                   <Button type="submit" variant="outline" size="sm">

@@ -22,7 +22,7 @@ export async function connectDB(): Promise<typeof mongoose> {
     });
 
     isConnected = true;
-    console.log(`[MongoDB] Connected successfully to host: ${conn.connection.host}`);
+    console.log(`[MongoDB] Connected successfully to host: ${conn.connection.host} (Database: ${conn.connection.name})`);
     return conn;
   } catch (err: any) {
     console.error(`\n================== [MONGODB CONNECTION ERROR] ==================`);
@@ -32,7 +32,7 @@ export async function connectDB(): Promise<typeof mongoose> {
     if (err.message.includes('ENOTFOUND') || err.message.includes('querySrv')) {
       console.error(`1. Check your MongoDB Atlas cluster hostname in .env for any typos.`);
       console.error(`2. Ensure your Atlas cluster is running (not paused/deleted).`);
-      console.error(`3. Or test with a local MongoDB: DATABASE_URL=mongodb://localhost:27017/skinova_db`);
+      console.error(`3. Or test with a local MongoDB: DATABASE_URL=mongodb://localhost:27017/skinova`);
     } else if (err.message.includes('bad auth') || err.message.includes('Authentication failed')) {
       console.error(`1. Check your database username and password in .env.`);
       console.error(`2. Ensure the user exists in MongoDB Atlas -> Database Access.`);

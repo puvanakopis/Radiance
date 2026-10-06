@@ -7,7 +7,7 @@ import { ToastProvider } from '@/context/ToastContext';
 import { CartDrawer } from '@/components/cart/CartDrawer';
 
 export const metadata: Metadata = {
-  title: 'VELORA | Conscious Botanical Skincare & Luxury Beauty Rituals',
+  title: 'SKINOVA | Conscious Botanical Skincare & Luxury Beauty Rituals',
   description: 'Pure, clinically efficacious botanical skincare, haircare, and body rituals thoughtfully crafted with Sri Lankan bio-actives.',
   keywords: ['skincare', 'botanicals', 'cosmetics', 'luxury beauty', 'Sri Lanka', 'clean beauty', 'serum', 'moisturizer'],
 };

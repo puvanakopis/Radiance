@@ -53,8 +53,8 @@ export default function AdminCustomersAndUsersPage() {
       if (!adminExists) {
         data.unshift({
           id: 'admin-01',
-          name: 'Velora Admin Concierge',
-          email: 'admin@velora.lk',
+          name: 'Skinova Admin Concierge',
+          email: 'admin@skinova.lk',
           phone: '+94 77 999 8888',
           role: 'admin',
           avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
@@ -65,7 +65,7 @@ export default function AdminCustomersAndUsersPage() {
             {
               id: 'addr-admin',
               label: 'Command Center',
-              recipientName: 'Velora Admin',
+              recipientName: 'Skinova Admin',
               phone: '+94 77 999 8888',
               street: '100 Galle Face Terrace',
               city: 'Colombo',

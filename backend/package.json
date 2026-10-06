@@ -1,7 +1,7 @@
 {
   "name": "skinova-backend",
   "version": "1.0.0",
-  "description": "Skinova Cosmetics E-Commerce Backend REST API",
+  "description": "Skinova Botanical Skincare E-Commerce Backend REST API",
   "main": "dist/server.js",
   "type": "module",
   "scripts": {

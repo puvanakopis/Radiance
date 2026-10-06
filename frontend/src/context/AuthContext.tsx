@@ -124,7 +124,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         showToast({
           type: 'success',
           title: 'Account verified',
-          message: `Welcome to VELORA, ${verifiedUser.name}`,
+          message: `Welcome to SKINOVA, ${verifiedUser.name}`,
         });
         return verifiedUser;
       } catch (err: any) {

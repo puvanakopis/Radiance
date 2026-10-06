@@ -96,7 +96,7 @@ export default function LoginPage() {
         </form>
 
         <div className="pt-6 mt-6 border-t border-[#1A1A1A]/10 text-center text-xs text-[#1A1A1A]/60">
-          <span>New to Velora? </span>
+          <span>New to Skinova? </span>
           <Link href="/register" className="font-semibold text-[#1A1A1A] hover:underline">
             Create an account
           </Link>

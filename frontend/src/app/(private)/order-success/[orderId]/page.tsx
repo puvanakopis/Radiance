@@ -72,7 +72,7 @@ export default function OrderSuccessPage({
           Ritual Confirmed
         </span>
         <h1 className="font-serif text-3xl sm:text-5xl text-[#1A1A1A]">
-          Thank you for choosing Velora.
+          Thank you for choosing Skinova.
         </h1>
         <p className="text-sm text-[#1A1A1A]/70 max-w-md mx-auto leading-relaxed">
           Your botanical formulations are being carefully prepared in our cleanroom facility.

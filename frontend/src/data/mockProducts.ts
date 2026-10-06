@@ -91,9 +91,9 @@ export const mockProducts: Product[] = [
   },
   {
     id: 'prod-02',
-    name: 'Velora Hydrating Face Cream',
+    name: 'Skinova Hydrating Face Cream',
     subtitle: 'Ceramide NP + Squalane Barrier Emulsion',
-    slug: 'velora-hydrating-face-cream',
+    slug: 'skinova-hydrating-face-cream',
     category: 'Skincare',
     subcategory: 'Moisturizers',
     price: 7400,
@@ -411,7 +411,7 @@ export const mockProducts: Product[] = [
     originalPrice: 28900,
     size: '4 Piece Kit',
     description: 'Our award-winning 4-piece ritual boxed in organic textured paper and raw linen ribbon.',
-    longDescription: 'Includes: Gentle Cloud Cleanser (50ml), Velvet Glow Serum (30ml), Velora Hydrating Face Cream (30ml), and Mineral SPF 50 (30ml). Everything you need for radiant, perfected skin from sunrise to dusk.',
+    longDescription: 'Includes: Gentle Cloud Cleanser (50ml), Velvet Glow Serum (30ml), Skinova Hydrating Face Cream (30ml), and Mineral SPF 50 (30ml). Everything you need for radiant, perfected skin from sunrise to dusk.',
     ingredients: ['Curated active sets containing pure botanical formulations.'],
     activeIngredients: [
       { name: 'Complete Synergy', benefit: 'Scientifically sequenced to optimize layering without pilling.' }
@@ -518,7 +518,7 @@ export const mockReviews: Review[] = [
     rating: 5,
     date: '2026-03-01',
     title: 'Zero white cast on South Asian skin!',
-    comment: 'As someone with deeper undertones, mineral sunscreens are usually terrifying. Velora SPF 50 leaves absolutely zero ghostliness. Pure perfection.',
+    comment: 'As someone with deeper undertones, mineral sunscreens are usually terrifying. Skinova SPF 50 leaves absolutely zero ghostliness. Pure perfection.',
     verified: true,
     skinType: 'Combination',
     helpfulCount: 42
@@ -533,7 +533,7 @@ export const mockOrders: Order[] = [
     customer: {
       id: 'cust-01',
       name: 'Puvanakopis',
-      email: 'puvana@velora.lk',
+      email: 'puvana@skinova.lk',
       phone: '+94 77 123 4567'
     },
     deliveryAddress: {
@@ -561,7 +561,7 @@ export const mockOrders: Order[] = [
       },
       {
         productId: 'prod-02',
-        productName: 'Velora Hydrating Face Cream',
+        productName: 'Skinova Hydrating Face Cream',
         productImage: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=1000&q=80',
         size: '50ml',
         price: 7400,
@@ -629,7 +629,7 @@ export const mockOrders: Order[] = [
     trackingNumber: 'DOM-KDY-12840',
     timeline: [
       { status: 'Placed', timestamp: '2026-03-14T09:15:00Z', description: 'Order initiated via WhatsApp', completed: true },
-      { status: 'Confirmed', timestamp: '2026-03-14T09:30:00Z', description: 'Confirmed by Velora Concierge', completed: true },
+      { status: 'Confirmed', timestamp: '2026-03-14T09:30:00Z', description: 'Confirmed by Skinova Concierge', completed: true },
       { status: 'Processing', timestamp: '2026-03-14T11:00:00Z', description: 'Packed at central facility', completed: true },
       { status: 'Shipped', timestamp: '2026-03-14T15:00:00Z', description: 'In transit with Prompt Xpress', completed: true },
       { status: 'Delivered', timestamp: '', description: 'Estimated delivery tomorrow', completed: false }

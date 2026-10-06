@@ -32,7 +32,7 @@ export default function ContactPage() {
       showToast({
         type: 'success',
         title: 'Inquiry Dispatched',
-        message: 'A Velora concierge specialist will respond within 4 business hours.',
+        message: 'A Skinova concierge specialist will respond within 4 business hours.',
       });
     }, 800);
   };
@@ -98,8 +98,8 @@ export default function ContactPage() {
               </div>
               <div className="space-y-1 text-xs">
                 <h3 className="font-serif text-base font-medium text-[#1A1A1A]">Electronic Correspondence</h3>
-                <p className="text-[#1A1A1A]/70">Client Concierge: concierge@velora.lk</p>
-                <p className="text-[#1A1A1A]/70">Partnerships: studio@velora.lk</p>
+                <p className="text-[#1A1A1A]/70">Client Concierge: concierge@skinova.lk</p>
+                <p className="text-[#1A1A1A]/70">Partnerships: studio@skinova.lk</p>
               </div>
             </div>
 

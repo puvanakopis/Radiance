@@ -18,7 +18,7 @@ class WhatsAppService {
   private businessNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '94771234567';
 
   getFormattedMessage(data: WhatsAppOrderData): string {
-    const header = `*✨ VELORA ORDER INQUIRY & CONFIRMATION ✨*\n` +
+    const header = `*✨ SKINOVA ORDER INQUIRY & CONFIRMATION ✨*\n` +
       `_Beauty, thoughtfully made._\n\n` +
       (data.orderNumber ? `*Order Ref:* #${data.orderNumber}\n` : '') +
       `--------------------------------\n` +

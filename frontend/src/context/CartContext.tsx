@@ -25,7 +25,7 @@ interface CartContextType {
 }
 
 const STANDARD_SHIPPING_FEE = 450;
-const STORAGE_KEY = 'velora_cart_items';
+const STORAGE_KEY = 'skinova_cart_items';
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
@@ -120,8 +120,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const applyCoupon = useCallback((code: string): boolean => {
     const cleanCode = code.trim().toUpperCase();
-    if (cleanCode === 'VELORA10') {
-      setAppliedCoupon('VELORA10');
+    if (cleanCode === 'SKINOVA10') {
+      setAppliedCoupon('SKINOVA10');
       setCouponDiscountPercent(0.10);
       showToast({
         type: 'success',
@@ -142,7 +142,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       showToast({
         type: 'error',
         title: 'Invalid coupon code',
-        message: 'Try code "VELORA10" for 10% off',
+        message: 'Try code "SKINOVA10" for 10% off',
       });
       return false;
     }
