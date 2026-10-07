@@ -1,16 +1,5 @@
-import mongoose, { Document } from 'mongoose';
+import mongoose from 'mongoose';
 import Counter from './counter.model.js';
-
-export interface IOtpVerificationDocument extends Document<string> {
-  _id: string;
-  email: string;
-  otpHash: string;
-  purpose: string;
-  payload?: any;
-  expiresAt: Date;
-  createdAt: Date;
-  updatedAt: Date;
-}
 
 const OtpVerificationSchema = new mongoose.Schema(
   {
@@ -44,7 +33,7 @@ const OtpVerificationSchema = new mongoose.Schema(
     timestamps: true,
     toJSON: {
       virtuals: true,
-      transform: (_doc, ret: any) => {
+      transform: (_doc, ret) => {
         ret.id = ret._id;
         delete ret.__v;
         return ret;
@@ -52,7 +41,7 @@ const OtpVerificationSchema = new mongoose.Schema(
     },
     toObject: {
       virtuals: true,
-      transform: (_doc, ret: any) => {
+      transform: (_doc, ret) => {
         ret.id = ret._id;
         delete ret.__v;
         return ret;
@@ -79,6 +68,6 @@ OtpVerificationSchema.pre('save', async function () {
 
 export const OtpVerificationModel =
   mongoose.models.OtpVerification ||
-  mongoose.model<IOtpVerificationDocument>('OtpVerification', OtpVerificationSchema);
+  mongoose.model('OtpVerification', OtpVerificationSchema);
 
 export default OtpVerificationModel;

@@ -1,14 +1,12 @@
-import { Request, Response, NextFunction } from 'express';
 import bcrypt from 'bcryptjs';
-import { UserModel, User, UserRole } from '../models/user.model.js';
+import { UserModel } from '../models/user.model.js';
 import { OtpVerificationModel } from '../models/otp.model.js';
 import { signToken } from '../utils/jwt.js';
 import { AppError } from '../middleware/error.middleware.js';
-import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
 import { sendOtpEmail } from '../utils/email.js';
 
 // Helper to remove sensitive password hash and format safe user response
-function sanitizeUser(userDoc: any): Partial<User> {
+function sanitizeUser(userDoc) {
   const user = userDoc.toObject ? userDoc.toObject() : userDoc;
   const { passwordHash, ...safeUser } = user;
   const firstName = safeUser.firstName || '';
@@ -21,7 +19,7 @@ function sanitizeUser(userDoc: any): Partial<User> {
     firstName,
     lastName,
     name: fullName,
-    role: safeUser.role as UserRole,
+    role: safeUser.role,
     phone: safeUser.phone || undefined,
     address: safeUser.address || undefined,
     city: safeUser.city || undefined,
@@ -34,7 +32,7 @@ function sanitizeUser(userDoc: any): Partial<User> {
 }
 
 // Public: Request Registration OTP (Stores pending user data & sends OTP)
-export async function sendRegistrationOtp(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function sendRegistrationOtp(req, res, next) {
   try {
     const { firstName, lastName, name, email, phone, phoneNumber, password, address, city, district } = req.body;
     const normalizedEmail = email.toLowerCase().trim();
@@ -104,7 +102,7 @@ export async function sendRegistrationOtp(req: Request, res: Response, next: Nex
 }
 
 // Public: Resend Registration OTP (Preserves pending registration details)
-export async function resendRegistrationOtp(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function resendRegistrationOtp(req, res, next) {
   try {
     const { email } = req.body;
     const normalizedEmail = email.toLowerCase().trim();
@@ -146,7 +144,7 @@ export async function resendRegistrationOtp(req: Request, res: Response, next: N
       expiresAt,
     });
 
-    const payloadObj = (existingOtp.payload as any) || {};
+    const payloadObj = existingOtp.payload || {};
     const recipientName = payloadObj.name || `${payloadObj.firstName || ''} ${payloadObj.lastName || ''}`.trim() || 'Valued Customer';
 
     // Send email with new OTP
@@ -171,7 +169,7 @@ export async function resendRegistrationOtp(req: Request, res: Response, next: N
 }
 
 // Public: Verify Registration OTP (Verifies OTP & saves user to database)
-export async function verifyRegistrationOtp(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function verifyRegistrationOtp(req, res, next) {
   try {
     const { email, otp } = req.body;
     const normalizedEmail = email.toLowerCase().trim();
@@ -206,7 +204,7 @@ export async function verifyRegistrationOtp(req: Request, res: Response, next: N
       throw new AppError('An account with this email address already exists. Please sign in.', 409);
     }
 
-    const payload = (otpRecord.payload as any) || {};
+    const payload = otpRecord.payload || {};
     if (!payload.passwordHash) {
       throw new AppError('Registration details are missing or expired. Please submit your registration details again.', 400);
     }
@@ -238,7 +236,7 @@ export async function verifyRegistrationOtp(req: Request, res: Response, next: N
     const token = signToken({
       userId: user.id || user._id.toString(),
       email: user.email,
-      role: user.role as UserRole,
+      role: user.role,
       firstName: user.firstName,
       lastName: user.lastName,
       name: `${user.firstName} ${user.lastName}`.trim(),
@@ -258,7 +256,7 @@ export async function verifyRegistrationOtp(req: Request, res: Response, next: N
 }
 
 // Public: Request Forgot Password OTP
-export async function sendForgotPasswordOtp(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function sendForgotPasswordOtp(req, res, next) {
   try {
     const { email } = req.body;
     const normalizedEmail = email.toLowerCase().trim();
@@ -318,12 +316,12 @@ export async function sendForgotPasswordOtp(req: Request, res: Response, next: N
 }
 
 // Public: Resend Forgot Password OTP
-export async function resendForgotPasswordOtp(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function resendForgotPasswordOtp(req, res, next) {
   return sendForgotPasswordOtp(req, res, next);
 }
 
 // Public: Verify Forgot Password OTP & Reset Password
-export async function verifyForgotPasswordOtp(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function verifyForgotPasswordOtp(req, res, next) {
   try {
     const { email, otp, newPassword, password } = req.body;
     const normalizedEmail = email.toLowerCase().trim();
@@ -398,7 +396,7 @@ export async function verifyForgotPasswordOtp(req: Request, res: Response, next:
 }
 
 // Public: Login (Customers & Admins)
-export async function login(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function login(req, res, next) {
   try {
     const { email, password } = req.body;
     const normalizedEmail = email.toLowerCase().trim();
@@ -421,7 +419,7 @@ export async function login(req: Request, res: Response, next: NextFunction): Pr
     const token = signToken({
       userId: user.id || user._id.toString(),
       email: user.email,
-      role: user.role as UserRole,
+      role: user.role,
       firstName: user.firstName,
       lastName: user.lastName,
       name: `${user.firstName} ${user.lastName}`.trim(),
@@ -441,7 +439,7 @@ export async function login(req: Request, res: Response, next: NextFunction): Pr
 }
 
 // Authenticated: Get Current User Profile
-export async function getMe(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+export async function getMe(req, res, next) {
   try {
     if (!req.user) {
       res.status(401).json({ success: false, message: 'Unauthenticated' });
@@ -464,7 +462,7 @@ export async function getMe(req: AuthenticatedRequest, res: Response, next: Next
 }
 
 // Authenticated: Update Profile
-export async function updateProfile(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+export async function updateProfile(req, res, next) {
   try {
     if (!req.user) {
       res.status(401).json({ success: false, message: 'Unauthenticated' });
@@ -472,7 +470,7 @@ export async function updateProfile(req: AuthenticatedRequest, res: Response, ne
     }
 
     const { firstName, lastName, name, phone, address, city, district, avatar } = req.body;
-    const updateData: any = {};
+    const updateData = {};
     if (firstName !== undefined) updateData.firstName = firstName.trim();
     if (lastName !== undefined) updateData.lastName = lastName.trim();
     if (name !== undefined && firstName === undefined && lastName === undefined) {
@@ -503,7 +501,7 @@ export async function updateProfile(req: AuthenticatedRequest, res: Response, ne
 }
 
 // Authenticated: Change Password
-export async function changePassword(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+export async function changePassword(req, res, next) {
   try {
     if (!req.user) {
       res.status(401).json({ success: false, message: 'Unauthenticated' });

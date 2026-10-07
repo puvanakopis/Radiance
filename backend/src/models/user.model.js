@@ -1,41 +1,5 @@
-import mongoose, { Document } from 'mongoose';
+import mongoose from 'mongoose';
 import Counter from './counter.model.js';
-
-export type UserRole = 'ADMIN' | 'CUSTOMER';
-
-export interface User {
-  id: string;
-  firstName: string;
-  lastName: string;
-  name?: string;
-  email: string;
-  role: UserRole;
-  phone?: string | null;
-  address?: string | null;
-  city?: string | null;
-  district?: string | null;
-  avatar?: string | null;
-  isActive?: boolean;
-  createdAt?: string | Date;
-  updatedAt?: string | Date;
-}
-
-export interface IUserDocument extends Document<string> {
-  _id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  passwordHash: string;
-  role: UserRole;
-  phone?: string | null;
-  address?: string | null;
-  city?: string | null;
-  district?: string | null;
-  avatar?: string | null;
-  isActive: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-}
 
 const UserSchema = new mongoose.Schema(
   {
@@ -102,7 +66,7 @@ const UserSchema = new mongoose.Schema(
     timestamps: true,
     toJSON: {
       virtuals: true,
-      transform: (_doc, ret: any) => {
+      transform: (_doc, ret) => {
         ret.id = ret._id;
         delete ret.__v;
         return ret;
@@ -110,7 +74,7 @@ const UserSchema = new mongoose.Schema(
     },
     toObject: {
       virtuals: true,
-      transform: (_doc, ret: any) => {
+      transform: (_doc, ret) => {
         ret.id = ret._id;
         delete ret.__v;
         return ret;
@@ -119,7 +83,7 @@ const UserSchema = new mongoose.Schema(
   }
 );
 
-UserSchema.pre('save', async function () {
+UserSchema.pre('validate', async function () {
   if (this.isNew && !this._id) {
     const counter = await Counter.findByIdAndUpdate(
       'user',
@@ -130,5 +94,5 @@ UserSchema.pre('save', async function () {
   }
 });
 
-export const UserModel = mongoose.models.User || mongoose.model<IUserDocument>('User', UserSchema);
+export const UserModel = mongoose.models.User || mongoose.model('User', UserSchema);
 export default UserModel;
