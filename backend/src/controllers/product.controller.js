@@ -40,7 +40,7 @@ export async function createProduct(req, res, next) {
       rating,
       reviewCount,
       badge,
-      status,
+      stock,
     } = req.body;
 
     const assignedId = (id || _id || (await getNextProductId())).trim();
@@ -63,7 +63,7 @@ export async function createProduct(req, res, next) {
       rating: rating !== undefined ? Number(rating) : 5.0,
       reviewCount: reviewCount !== undefined ? Number(reviewCount) : 0,
       badge: badge || null,
-      status: status || 'In Stock',
+      stock: stock !== undefined && !isNaN(Number(stock)) ? Math.max(0, Number(stock)) : 0,
     });
 
     const savedProduct = await product.save();
@@ -95,6 +95,8 @@ export async function getAllProducts(req, res, next) {
       minRating,
       badge,
       status,
+      stockFilter,
+      inStockOnly,
       search,
       q,
       searchQuery,
@@ -150,9 +152,21 @@ export async function getAllProducts(req, res, next) {
       filter.badge = badge;
     }
 
-    // Status filter
-    if (status && typeof status === 'string') {
-      filter.status = status;
+    // Stock / Inventory filter
+    if (
+      inStockOnly === 'true' ||
+      inStockOnly === true ||
+      stockFilter === 'In Stock' ||
+      stockFilter === 'inStock' ||
+      status === 'In Stock'
+    ) {
+      filter.stock = { $gt: 0 };
+    } else if (
+      stockFilter === 'Out of Stock' ||
+      stockFilter === 'outOfStock' ||
+      status === 'Out of Stock'
+    ) {
+      filter.stock = { $lte: 0 };
     }
 
     // Search query across name, category, subcategory, description, ingredients
@@ -300,7 +314,9 @@ export async function updateProductById(req, res, next) {
     if (updates.rating !== undefined) product.rating = Number(updates.rating);
     if (updates.reviewCount !== undefined) product.reviewCount = Number(updates.reviewCount);
     if (updates.badge !== undefined) product.badge = updates.badge;
-    if (updates.status !== undefined) product.status = updates.status;
+    if (updates.stock !== undefined && !isNaN(Number(updates.stock))) {
+      product.stock = Math.max(0, Number(updates.stock));
+    }
 
     const updatedProduct = await product.save();
 
@@ -345,3 +361,81 @@ export async function deleteProductById(req, res, next) {
     next(error);
   }
 }
+
+/**
+ * @desc    Add or update review/feedback on a product
+ * @route   POST /api/products/:id/feedback or POST /api/products/:id/reviews
+ * @access  Private (Authenticated User)
+ */
+export async function addFeedback(req, res, next) {
+  try {
+    const { id } = req.params;
+    const { rating, feedback, comment } = req.body;
+
+    if (!req.user || !req.user.userId) {
+      throw new AppError('Authentication required to submit feedback.', 401);
+    }
+
+    if (rating === undefined || rating === null || isNaN(Number(rating))) {
+      throw new AppError('Rating is required and must be a number between 1 and 5.', 400);
+    }
+
+    const reviewRating = Number(rating);
+    if (reviewRating < 1 || reviewRating > 5) {
+      throw new AppError('Rating must be between 1 and 5 stars.', 400);
+    }
+
+    const reviewText = (feedback || comment || '').trim();
+    if (!reviewText) {
+      throw new AppError('Feedback text is required.', 400);
+    }
+
+    const userId = req.user.userId;
+
+    const product = await ProductModel.findById(id);
+
+    if (!product) {
+      throw new AppError(`Product not found with identifier: "${id}"`, 404);
+    }
+
+    // Initialize reviews array if null
+    if (!Array.isArray(product.reviews)) {
+      product.reviews = [];
+    }
+
+    // Check if user has already reviewed this product
+    const existingIndex = product.reviews.findIndex((r) => r.userId === userId);
+
+    if (existingIndex !== -1) {
+      product.reviews[existingIndex].rating = reviewRating;
+      product.reviews[existingIndex].feedback = reviewText;
+      product.reviews[existingIndex].createdAt = new Date();
+    } else {
+      product.reviews.push({
+        userId,
+        rating: reviewRating,
+        feedback: reviewText,
+        createdAt: new Date(),
+      });
+    }
+
+    // Recalculate average rating & reviewCount
+    const totalReviews = product.reviews.length;
+    const sumRatings = product.reviews.reduce((acc, curr) => acc + (curr.rating || 0), 0);
+    const avgRating = totalReviews > 0 ? Number((sumRatings / totalReviews).toFixed(1)) : 5.0;
+
+    product.reviewCount = totalReviews;
+    product.rating = avgRating;
+
+    const updatedProduct = await product.save();
+
+    res.status(201).json({
+      success: true,
+      message: existingIndex !== -1 ? 'Review updated successfully' : 'Feedback submitted successfully',
+      data: formatProduct(updatedProduct),
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
