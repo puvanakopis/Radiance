@@ -38,55 +38,34 @@ class AdminService {
           const price = Number(item.price) || 0;
 
           if (prodId) {
-            const existing = productSalesMap.get(prodId);
-            const found = products.find((p) => p.id === prodId || p._id === prodId);
-            const matchedProduct: Product = found || {
-              id: prodId,
-              name: item.productName || 'Botanical Formula',
-              category: 'Skincare',
-              subcategory: 'General',
-              price: price,
-              size: item.size || '50ml',
-              description: 'Pure bio-botanical formulation',
-              longDescription: 'Pure bio-botanical formulation with active extracts',
-              ingredients: ['Aqua', 'Botanical Extract'],
-              activeIngredients: [{ name: 'Botanical Actives', benefit: 'Skin barrier nourishment' }],
-              howToUse: 'Apply gently onto skin',
-              skinTypes: ['All Skin Types'],
-              image: item.productImage || '',
-              rating: 5.0,
-              reviewCount: 0,
-              stock: 10,
-              createdAt: new Date().toISOString(),
-            };
+            const matchedProduct = products.find(
+              (p) => String(p.id) === String(prodId) || String(p._id) === String(prodId)
+            );
 
-            if (existing) {
-              existing.unitsSold += qty;
-              existing.revenue += qty * price;
-            } else {
-              productSalesMap.set(prodId, {
-                product: matchedProduct,
-                unitsSold: qty,
-                revenue: qty * price,
-              });
+            // Only track items for products that genuinely exist in the database
+            if (matchedProduct) {
+              const prodKey = String(matchedProduct.id || matchedProduct._id);
+              const existing = productSalesMap.get(prodKey);
+
+              if (existing) {
+                existing.unitsSold += qty;
+                existing.revenue += qty * price;
+              } else {
+                productSalesMap.set(prodKey, {
+                  product: matchedProduct,
+                  unitsSold: qty,
+                  revenue: qty * price,
+                });
+              }
             }
           }
         });
       }
     });
 
-    let topProducts = Array.from(productSalesMap.values())
+    const topProducts = Array.from(productSalesMap.values())
       .sort((a, b) => b.unitsSold - a.unitsSold)
       .slice(0, 5);
-
-    // If no order items recorded yet, fallback to top products from catalog
-    if (topProducts.length === 0 && products.length > 0) {
-      topProducts = products.slice(0, 4).map((p, idx) => ({
-        product: p,
-        unitsSold: (products.length - idx) * 3,
-        revenue: (products.length - idx) * 3 * p.price,
-      }));
-    }
 
     // 4. Compute 7-day Sales Distribution based on actual order dates
     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -127,8 +106,8 @@ class AdminService {
       ordersCount: orders.length,
       customersCount,
       lowStockCount: lowStockCount || outOfStockCount,
-      revenueGrowth: orders.length > 0 ? 14.8 : 0,
-      ordersGrowth: orders.length > 0 ? 10.5 : 0,
+      revenueGrowth: 0,
+      ordersGrowth: 0,
       recentOrders: orders.slice(0, 6),
       topProducts,
       salesByDay,

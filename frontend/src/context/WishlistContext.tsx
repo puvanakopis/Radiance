@@ -17,19 +17,16 @@ interface WishlistContextType {
   refreshWishlist: () => Promise<void>;
 }
 
-const STORAGE_KEY = 'skinova_wishlist_items';
-
 const WishlistContext = createContext<WishlistContextType | undefined>(undefined);
 
 export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [items, setItems] = useState<Product[]>([]);
-  const [isInitialized, setIsInitialized] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { showToast } = useToast();
   const { isAuthenticated, user, isLoading: isAuthLoading } = useAuth();
   const prevUserIdRef = useRef<string | null | undefined>(undefined);
 
-  // 1. Load all products in wishlist from server (when logged in) or localStorage (guest)
+  // 1. Load wishlist directly from database (via wishlistService)
   const loadWishlist = useCallback(async () => {
     if (isAuthLoading) return;
 
@@ -39,25 +36,13 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         const fetchedItems = await wishlistService.getWishlist();
         setItems(fetchedItems);
       } catch (err) {
-        console.error('[WishlistContext] Failed to load server wishlist:', err);
+        console.error('[WishlistContext] Failed to load database wishlist:', err);
       } finally {
         setIsLoading(false);
-        setIsInitialized(true);
       }
     } else {
-      // Guest: localStorage fallback
-      try {
-        const saved = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null;
-        if (saved) {
-          setItems(JSON.parse(saved));
-        } else {
-          setItems([]);
-        }
-      } catch (err) {
-        console.error('[WishlistContext] Failed to load localStorage wishlist:', err);
-      } finally {
-        setIsInitialized(true);
-      }
+      setItems([]);
+      setIsLoading(false);
     }
   }, [isAuthenticated, user, isAuthLoading]);
 
@@ -70,16 +55,6 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, [isAuthenticated, user, isAuthLoading, loadWishlist]);
 
-  // Persist guest items in localStorage
-  useEffect(() => {
-    if (!isInitialized || isAuthLoading || isAuthenticated) return;
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-    } catch (err) {
-      console.error('[WishlistContext] Failed to save localStorage:', err);
-    }
-  }, [items, isInitialized, isAuthLoading, isAuthenticated]);
-
   const isInWishlist = useCallback(
     (productId: string) => {
       return items.some((item) => String(item.id) === String(productId));
@@ -87,9 +62,18 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     [items]
   );
 
-  // 2. Toggle one product in wishlist (calls addToWishlist or removeFromWishlist)
+  // 2. Toggle product in database wishlist
   const toggleWishlist = useCallback(
     async (product: Product) => {
+      if (!isAuthenticated) {
+        showToast({
+          type: 'info',
+          title: 'Sign In Required',
+          message: 'Please sign in to your account to save items to your wishlist.',
+        });
+        return;
+      }
+
       const exists = items.some((item) => String(item.id) === String(product.id));
       const prevItems = [...items];
 
@@ -102,19 +86,17 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           message: `${product.name} removed from your saved items`,
         });
 
-        if (isAuthenticated) {
-          try {
-            const updatedItems = await wishlistService.removeFromWishlist(product.id);
-            setItems(updatedItems);
-          } catch (err: any) {
-            console.error('[WishlistContext] Backend remove failed:', err);
-            setItems(prevItems);
-            showToast({
-              type: 'error',
-              title: 'Wishlist update failed',
-              message: err.message || 'Unable to update wishlist.',
-            });
-          }
+        try {
+          const updatedItems = await wishlistService.removeFromWishlist(product.id);
+          setItems(updatedItems);
+        } catch (err: any) {
+          console.error('[WishlistContext] Backend remove failed:', err);
+          setItems(prevItems);
+          showToast({
+            type: 'error',
+            title: 'Wishlist update failed',
+            message: err.message || 'Unable to update wishlist.',
+          });
         }
       } else {
         // Optimistic add
@@ -125,28 +107,35 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           message: `${product.name} added to your wishlist`,
         });
 
-        if (isAuthenticated) {
-          try {
-            const updatedItems = await wishlistService.addToWishlist(product.id);
-            setItems(updatedItems);
-          } catch (err: any) {
-            console.error('[WishlistContext] Backend add failed:', err);
-            setItems(prevItems);
-            showToast({
-              type: 'error',
-              title: 'Wishlist update failed',
-              message: err.message || 'Unable to update wishlist.',
-            });
-          }
+        try {
+          const updatedItems = await wishlistService.addToWishlist(product.id);
+          setItems(updatedItems);
+        } catch (err: any) {
+          console.error('[WishlistContext] Backend add failed:', err);
+          setItems(prevItems);
+          showToast({
+            type: 'error',
+            title: 'Wishlist update failed',
+            message: err.message || 'Unable to update wishlist.',
+          });
         }
       }
     },
     [items, isAuthenticated, showToast]
   );
 
-  // 3. Remove one product from wishlist
+  // 3. Remove product from database wishlist
   const removeFromWishlist = useCallback(
     async (productId: string) => {
+      if (!isAuthenticated) {
+        showToast({
+          type: 'info',
+          title: 'Sign In Required',
+          message: 'Please sign in to manage your wishlist.',
+        });
+        return;
+      }
+
       const prevItems = [...items];
       const target = items.find((p) => String(p.id) === String(productId));
 
@@ -160,52 +149,46 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         });
       }
 
-      if (isAuthenticated) {
-        try {
-          const updatedItems = await wishlistService.removeFromWishlist(productId);
-          setItems(updatedItems);
-        } catch (err: any) {
-          console.error('[WishlistContext] Backend remove failed:', err);
-          setItems(prevItems);
-          showToast({
-            type: 'error',
-            title: 'Wishlist update failed',
-            message: err.message || 'Failed to remove item.',
-          });
-        }
+      try {
+        const updatedItems = await wishlistService.removeFromWishlist(productId);
+        setItems(updatedItems);
+      } catch (err: any) {
+        console.error('[WishlistContext] Backend remove failed:', err);
+        setItems(prevItems);
+        showToast({
+          type: 'error',
+          title: 'Wishlist update failed',
+          message: err.message || 'Failed to remove item.',
+        });
       }
     },
     [items, isAuthenticated, showToast]
   );
 
-  // 4. Remove all products from wishlist
+  // 4. Clear all products from database wishlist
   const clearWishlist = useCallback(async () => {
+    if (!isAuthenticated) {
+      setItems([]);
+      return;
+    }
+
     const prevItems = [...items];
     setItems([]);
 
-    if (isAuthenticated) {
-      try {
-        await wishlistService.clearWishlist();
-        showToast({
-          type: 'info',
-          title: 'Wishlist Cleared',
-          message: 'All items removed from your wishlist.',
-        });
-      } catch (err: any) {
-        console.error('[WishlistContext] Clear failed:', err);
-        setItems(prevItems);
-        showToast({
-          type: 'error',
-          title: 'Failed to clear wishlist',
-          message: err.message || 'Unable to clear saved items.',
-        });
-      }
-    } else {
-      localStorage.removeItem(STORAGE_KEY);
+    try {
+      await wishlistService.clearWishlist();
       showToast({
         type: 'info',
         title: 'Wishlist Cleared',
-        message: 'All items removed from your saved items.',
+        message: 'All items removed from your wishlist.',
+      });
+    } catch (err: any) {
+      console.error('[WishlistContext] Clear failed:', err);
+      setItems(prevItems);
+      showToast({
+        type: 'error',
+        title: 'Failed to clear wishlist',
+        message: err.message || 'Unable to clear saved items.',
       });
     }
   }, [items, isAuthenticated, showToast]);

@@ -247,18 +247,18 @@ class ProductService {
   async getReviewsForProduct(productId: string): Promise<Review[]> {
     const product = await this.getProductById(productId);
     if (product && Array.isArray(product.reviews) && product.reviews.length > 0) {
-      return product.reviews.map((r, idx) => ({
-        id: r._id || r.id || `rev-${idx}-${Date.now()}`,
+      return product.reviews.map((r) => ({
+        id: String(r._id || r.id || ''),
         productId,
-        userName: r.userId || 'Verified Customer',
-        userLocation: 'Sri Lanka',
-        rating: r.rating,
-        date: r.createdAt ? new Date(r.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-        title: 'Verified Customer Experience',
-        comment: r.feedback,
-        verified: true,
-        skinType: 'Combination' as SkinType,
-        helpfulCount: 0,
+        userName: r.userName || r.userId || '',
+        userLocation: r.userLocation,
+        rating: Number(r.rating) || 0,
+        date: r.createdAt ? new Date(r.createdAt).toISOString().split('T')[0] : '',
+        title: r.title || '',
+        comment: r.feedback || '',
+        verified: !!r.verified,
+        skinType: r.skinType as SkinType | undefined,
+        helpfulCount: Number(r.helpfulCount) || 0,
       }));
     }
     return [];
@@ -281,32 +281,24 @@ class ProductService {
       const latestReview = updated.reviews?.[updated.reviews.length - 1];
       if (latestReview) {
         return {
-          id: latestReview._id || latestReview.id || `rev-${Date.now()}`,
+          id: String(latestReview._id || latestReview.id || ''),
           productId: review.productId,
-          userName: review.userName || 'Verified Patron',
-          userLocation: 'Sri Lanka',
-          rating: latestReview.rating,
-          date: latestReview.createdAt ? new Date(latestReview.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-          title: 'Customer Experience',
-          comment: latestReview.feedback,
-          verified: true,
-          helpfulCount: 0,
+          userName: latestReview.userName || latestReview.userId || review.userName || '',
+          userLocation: latestReview.userLocation,
+          rating: Number(latestReview.rating) || review.rating,
+          date: latestReview.createdAt
+            ? new Date(latestReview.createdAt).toISOString().split('T')[0]
+            : new Date().toISOString().split('T')[0],
+          title: latestReview.title || '',
+          comment: latestReview.feedback || feedbackText,
+          verified: !!latestReview.verified,
+          skinType: latestReview.skinType as SkinType | undefined,
+          helpfulCount: Number(latestReview.helpfulCount) || 0,
         };
       }
     }
 
-    return {
-      id: `rev-${Date.now()}`,
-      productId: review.productId,
-      userName: review.userName || 'Verified Patron',
-      userLocation: 'Sri Lanka',
-      rating: review.rating,
-      date: new Date().toISOString().split('T')[0],
-      title: 'Customer Experience',
-      comment: feedbackText,
-      verified: true,
-      helpfulCount: 0,
-    };
+    throw new Error('Failed to record review on backend formulation.');
   }
 
   // --- Admin CRUD Operations (100% Backend API) ---

@@ -42,8 +42,14 @@ export interface CustomerReview {
   _id?: string;
   id?: string;
   userId: string;
+  userName?: string;
+  userLocation?: string;
+  title?: string;
+  skinType?: SkinType | string;
   rating: number;
   feedback: string;
+  verified?: boolean;
+  helpfulCount?: number;
   createdAt?: string;
 }
 
