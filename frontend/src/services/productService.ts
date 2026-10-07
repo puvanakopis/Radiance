@@ -1,194 +1,373 @@
-import { Product, ProductCategory, FilterState, Review } from '@/types';
-import { mockProducts, mockCategories, mockReviews } from '@/data/mockProducts';
+import { Product, ProductCategory, FilterState, Review, Category, SkinType } from '@/types';
+import {
+  CreateProductParams,
+  UpdateProductParams,
+  GetProductsQueryParams,
+  ProductApiResponse,
+} from '@/types/product.interface';
+import { CATEGORIES_METADATA } from '@/data/categories';
 
-// Simulated latency to demonstrate real-world async UX patterns
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+const TOKEN_STORAGE_KEY = 'skinova_jwt_token';
 
 class ProductService {
-  private products: Product[] = [...mockProducts];
-  private reviews: Review[] = [...mockReviews];
-
-  async getProducts(filter?: Partial<FilterState>): Promise<Product[]> {
-    await delay(120);
-    let result = [...this.products];
-
-    if (!filter) return result;
-
-    if (filter.categories && filter.categories.length > 0) {
-      result = result.filter(p => filter.categories?.includes(p.category));
-    }
-
-    if (filter.skinTypes && filter.skinTypes.length > 0) {
-      result = result.filter(p => 
-        p.skinTypes.some(st => filter.skinTypes?.includes(st as any) || st === 'All Skin Types')
-      );
-    }
-
-    if (filter.priceRange) {
-      const [min, max] = filter.priceRange;
-      result = result.filter(p => p.price >= min && p.price <= max);
-    }
-
-    if (filter.minRating && filter.minRating > 0) {
-      result = result.filter(p => p.rating >= filter.minRating!);
-    }
-
-    if (filter.searchQuery && filter.searchQuery.trim() !== '') {
-      const query = filter.searchQuery.toLowerCase();
-      result = result.filter(p => 
-        p.name.toLowerCase().includes(query) ||
-        p.category.toLowerCase().includes(query) ||
-        p.subcategory.toLowerCase().includes(query) ||
-        p.description.toLowerCase().includes(query) ||
-        p.ingredients.some(ing => ing.toLowerCase().includes(query))
-      );
-    }
-
-    if (filter.sortBy) {
-      switch (filter.sortBy) {
-        case 'price-asc':
-          result.sort((a, b) => a.price - b.price);
-          break;
-        case 'price-desc':
-          result.sort((a, b) => b.price - a.price);
-          break;
-        case 'rating':
-          result.sort((a, b) => b.rating - a.rating);
-          break;
-        case 'newest':
-          result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-          break;
-        case 'featured':
-        default:
-          result.sort((a, b) => b.rating - a.rating);
-          break;
-      }
-    }
-
-    return result;
+  private getToken(): string | null {
+    if (typeof window === 'undefined') return null;
+    return localStorage.getItem(TOKEN_STORAGE_KEY);
   }
 
-  async getProductBySlug(slugOrId: string): Promise<Product | null> {
-    await delay(80);
-    return (
-      this.products.find(
-        p =>
-          p.id === slugOrId ||
-          p._id === slugOrId ||
-          p.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') === slugOrId.toLowerCase()
-      ) || null
-    );
+  private async request<T = any>(
+    endpoint: string,
+    options: RequestInit = {}
+  ): Promise<ProductApiResponse<T>> {
+    const url = `${API_BASE_URL}${endpoint}`;
+    const token = this.getToken();
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...((options.headers as Record<string, string>) || {}),
+    };
+
+    let res: Response;
+    try {
+      res = await fetch(url, { ...options, headers });
+    } catch (err) {
+      console.error(`[ProductService] Network error connecting to ${url}:`, err);
+      throw new Error('Unable to connect to the product service backend.');
+    }
+
+    let data: ProductApiResponse<T>;
+    try {
+      data = await res.json();
+    } catch {
+      data = {
+        success: false,
+        message: `Unexpected server response (HTTP ${res.status})`,
+      };
+    }
+
+    if (!res.ok || data.success === false) {
+      throw new Error(data.message || `Product request failed with status ${res.status}`);
+    }
+
+    return data;
+  }
+
+  private normalizeProduct(raw: any): Product {
+    if (!raw) return raw;
+    const id = raw.id || raw._id || '';
+    return {
+      id,
+      _id: id,
+      name: raw.name || '',
+      category: raw.category as ProductCategory,
+      subcategory: raw.subcategory || 'General',
+      price: Number(raw.price) || 0,
+      size: raw.size || '50ml',
+      description: raw.description || '',
+      longDescription: raw.longDescription || raw.description || '',
+      ingredients: Array.isArray(raw.ingredients) ? raw.ingredients : [],
+      activeIngredients: Array.isArray(raw.activeIngredients) ? raw.activeIngredients : [],
+      howToUse: raw.howToUse || '',
+      skinTypes: Array.isArray(raw.skinTypes) && raw.skinTypes.length > 0 ? raw.skinTypes : ['All Skin Types'],
+      image: raw.image || (Array.isArray(raw.images) && raw.images[0]) || '',
+      images: Array.isArray(raw.images) ? raw.images : raw.image ? [raw.image] : [],
+      rating: raw.rating !== undefined && raw.rating !== null ? Number(raw.rating) : null,
+      reviewCount: raw.reviewCount !== undefined && raw.reviewCount !== null ? Number(raw.reviewCount) : null,
+      reviews: Array.isArray(raw.reviews) ? raw.reviews : [],
+      badge: raw.badge || null,
+      stock: raw.stock !== undefined && raw.stock !== null ? Number(raw.stock) : 0,
+      createdAt: raw.createdAt || new Date().toISOString(),
+      updatedAt: raw.updatedAt,
+    };
+  }
+
+  // --- Read & Catalog Operations (100% Backend API) ---
+
+  async getProducts(
+    filter?: Partial<FilterState> | GetProductsQueryParams
+  ): Promise<Product[]> {
+    const searchParams = new URLSearchParams();
+
+    if (filter) {
+      // Categories
+      if ('categories' in filter && Array.isArray(filter.categories) && filter.categories.length > 0) {
+        searchParams.set('category', filter.categories.join(','));
+      } else if ('category' in filter && filter.category) {
+        searchParams.set('category', String(filter.category));
+      }
+
+      // Subcategory
+      if ('subcategory' in filter && filter.subcategory) {
+        searchParams.set('subcategory', filter.subcategory);
+      }
+
+      // Skin Types
+      if ('skinTypes' in filter && filter.skinTypes) {
+        if (Array.isArray(filter.skinTypes) && filter.skinTypes.length > 0) {
+          searchParams.set('skinTypes', filter.skinTypes.join(','));
+        } else if (typeof filter.skinTypes === 'string' && filter.skinTypes) {
+          searchParams.set('skinTypes', filter.skinTypes);
+        }
+      } else if ('skinType' in filter && filter.skinType) {
+        searchParams.set('skinType', String(filter.skinType));
+      }
+
+      // Price Range
+      if ('priceRange' in filter && filter.priceRange) {
+        const [min, max] = filter.priceRange;
+        if (min > 0) searchParams.set('minPrice', String(min));
+        if (max < 30000) searchParams.set('maxPrice', String(max));
+      } else {
+        if ('minPrice' in filter && filter.minPrice !== undefined) {
+          searchParams.set('minPrice', String(filter.minPrice));
+        }
+        if ('maxPrice' in filter && filter.maxPrice !== undefined) {
+          searchParams.set('maxPrice', String(filter.maxPrice));
+        }
+      }
+
+      // Rating
+      if (filter.minRating && filter.minRating > 0) {
+        searchParams.set('minRating', String(filter.minRating));
+      }
+
+      // Badge
+      if ('badge' in filter && filter.badge) {
+        searchParams.set('badge', filter.badge);
+      }
+
+      // Stock Filters
+      if ('inStockOnly' in filter && filter.inStockOnly) {
+        searchParams.set('inStockOnly', 'true');
+      }
+      if ('stockFilter' in filter && filter.stockFilter && filter.stockFilter !== 'All') {
+        searchParams.set('stockFilter', filter.stockFilter);
+      }
+
+      // Search Query
+      const queryTerm =
+        ('searchQuery' in filter && filter.searchQuery ? filter.searchQuery : '') ||
+        ('search' in filter && filter.search ? filter.search : '') ||
+        ('q' in filter && filter.q ? filter.q : '');
+      if (queryTerm && queryTerm.trim()) {
+        searchParams.set('search', queryTerm.trim());
+      }
+
+      // Sort By
+      if (filter.sortBy) {
+        searchParams.set('sortBy', filter.sortBy);
+      }
+
+      // Pagination
+      if ('page' in filter && filter.page) searchParams.set('page', String(filter.page));
+      if ('limit' in filter && filter.limit) searchParams.set('limit', String(filter.limit));
+    }
+
+    const queryString = searchParams.toString();
+    const endpoint = queryString ? `/products?${queryString}` : '/products';
+    const response = await this.request<Product[]>(endpoint, { method: 'GET' });
+
+    if (response.data && Array.isArray(response.data)) {
+      return response.data.map((p) => this.normalizeProduct(p));
+    }
+
+    return [];
   }
 
   async getProductById(id: string): Promise<Product | null> {
-    await delay(50);
-    return this.products.find(p => p.id === id || p._id === id) || null;
+    try {
+      const response = await this.request<Product>(`/products/${id}`, { method: 'GET' });
+      if (response.data) {
+        return this.normalizeProduct(response.data);
+      }
+    } catch {
+      // Return null if not found
+    }
+    return null;
+  }
+
+  async getProductBySlug(slugOrId: string): Promise<Product | null> {
+    // 1. Try direct ID retrieval first
+    const directProduct = await this.getProductById(slugOrId);
+    if (directProduct) return directProduct;
+
+    // 2. Fetch products and match generated slug from formulation name
+    try {
+      const allProducts = await this.getProducts();
+      const found = allProducts.find(
+        (p) =>
+          p.id === slugOrId ||
+          p._id === slugOrId ||
+          p.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') === slugOrId.toLowerCase()
+      );
+      if (found) return found;
+    } catch {
+      // Ignored
+    }
+
+    return null;
   }
 
   async getFeaturedProducts(): Promise<Product[]> {
-    await delay(50);
-    return this.products.filter(p => p.rating >= 4.8);
+    const products = await this.getProducts({ sortBy: 'rating' });
+    return products.slice(0, 4);
   }
 
   async getBestSellers(): Promise<Product[]> {
-    await delay(50);
-    return this.products.filter(p => p.reviewCount >= 70 || p.rating >= 4.9);
+    const products = await this.getProducts({ sortBy: 'rating' });
+    return products.slice(0, 4);
   }
 
   async getNewArrivals(): Promise<Product[]> {
-    await delay(50);
-    return [...this.products].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    const products = await this.getProducts({ sortBy: 'newest' });
+    return products.slice(0, 4);
   }
 
-  async getRelatedProducts(category: ProductCategory, currentId: string, limit = 4): Promise<Product[]> {
-    await delay(50);
-    return this.products
-      .filter(p => p.category === category && p.id !== currentId)
-      .slice(0, limit);
+  async getRelatedProducts(
+    category: ProductCategory,
+    currentId: string,
+    limit = 4
+  ): Promise<Product[]> {
+    const products = await this.getProducts({ category, limit: (limit || 4) + 2 });
+    return products.filter((p) => p.id !== currentId && p._id !== currentId).slice(0, limit);
   }
 
-  async getCategories() {
-    await delay(30);
-    return mockCategories;
+  async getCategories(): Promise<Category[]> {
+    const allProducts = await this.getProducts();
+    return CATEGORIES_METADATA.map((cat) => ({
+      ...cat,
+      itemCount: allProducts.filter((p) => p.category === cat.name).length,
+    }));
   }
+
+  // --- Customer Feedback / Reviews Flow (100% Backend API) ---
 
   async getReviewsForProduct(productId: string): Promise<Review[]> {
-    await delay(60);
-    return this.reviews.filter(r => r.productId === productId);
+    const product = await this.getProductById(productId);
+    if (product && Array.isArray(product.reviews) && product.reviews.length > 0) {
+      return product.reviews.map((r, idx) => ({
+        id: r._id || r.id || `rev-${idx}-${Date.now()}`,
+        productId,
+        userName: r.userId || 'Verified Customer',
+        userLocation: 'Sri Lanka',
+        rating: r.rating,
+        date: r.createdAt ? new Date(r.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+        title: 'Verified Customer Experience',
+        comment: r.feedback,
+        verified: true,
+        skinType: 'Combination' as SkinType,
+        helpfulCount: 0,
+      }));
+    }
+    return [];
   }
 
-  async addReview(review: Omit<Review, 'id' | 'date' | 'helpfulCount'>): Promise<Review> {
-    await delay(150);
-    const newReview: Review = {
-      ...review,
-      id: `rev-${Date.now()}`,
-      date: new Date().toISOString().split('T')[0],
-      helpfulCount: 0
-    };
-    this.reviews.unshift(newReview);
+  async addReview(
+    review: { productId: string; rating: number; feedback?: string; comment?: string; userName?: string }
+  ): Promise<Review> {
+    const feedbackText = (review.feedback || review.comment || '').trim();
+    const response = await this.request<Product>(`/products/${review.productId}/feedback`, {
+      method: 'POST',
+      body: JSON.stringify({
+        rating: review.rating,
+        feedback: feedbackText,
+      }),
+    });
 
-    // Also update embedded reviews in product
-    const prod = this.products.find(p => p.id === review.productId || p._id === review.productId);
-    if (prod) {
-      if (!prod.reviews) prod.reviews = [];
-      prod.reviews.push({
-        id: newReview.id,
-        userId: newReview.userName,
-        rating: newReview.rating,
-        feedback: newReview.comment,
-        createdAt: newReview.date
-      });
-      prod.reviewCount = (prod.reviewCount || 0) + 1;
-      const totalScore = this.reviews
-        .filter(r => r.productId === review.productId)
-        .reduce((sum, r) => sum + r.rating, 0);
-      const revCount = this.reviews.filter(r => r.productId === review.productId).length;
-      prod.rating = Number((totalScore / revCount).toFixed(1));
+    if (response.data) {
+      const updated = this.normalizeProduct(response.data);
+      const latestReview = updated.reviews?.[updated.reviews.length - 1];
+      if (latestReview) {
+        return {
+          id: latestReview._id || latestReview.id || `rev-${Date.now()}`,
+          productId: review.productId,
+          userName: review.userName || 'Verified Patron',
+          userLocation: 'Sri Lanka',
+          rating: latestReview.rating,
+          date: latestReview.createdAt ? new Date(latestReview.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+          title: 'Customer Experience',
+          comment: latestReview.feedback,
+          verified: true,
+          helpfulCount: 0,
+        };
+      }
     }
 
-    return newReview;
-  }
-
-  // Admin capabilities
-  async createProduct(data: Omit<Product, 'id' | 'createdAt'>): Promise<Product> {
-    await delay(200);
-    const nextSeq = this.products.length + 1;
-    const nextId = `prod_${String(nextSeq).padStart(2, '0')}`;
-    const newProduct: Product = {
-      ...data,
-      id: nextId,
-      _id: nextId,
-      subcategory: data.subcategory || 'General',
-      size: data.size || '50ml',
-      longDescription: data.longDescription || data.description,
-      ingredients: data.ingredients || [],
-      activeIngredients: data.activeIngredients || [],
-      howToUse: data.howToUse || '',
-      skinTypes: data.skinTypes || ['All Skin Types'],
-      image: data.image || '',
-      rating: data.rating ?? 5.0,
-      reviewCount: data.reviewCount ?? 0,
-      reviews: data.reviews || [],
-      status: data.status || 'In Stock',
-      createdAt: new Date().toISOString().split('T')[0]
+    return {
+      id: `rev-${Date.now()}`,
+      productId: review.productId,
+      userName: review.userName || 'Verified Patron',
+      userLocation: 'Sri Lanka',
+      rating: review.rating,
+      date: new Date().toISOString().split('T')[0],
+      title: 'Customer Experience',
+      comment: feedbackText,
+      verified: true,
+      helpfulCount: 0,
     };
-    this.products.unshift(newProduct);
-    return newProduct;
   }
 
-  async updateProduct(id: string, updates: Partial<Product>): Promise<Product> {
-    await delay(150);
-    const index = this.products.findIndex(p => p.id === id || p._id === id);
-    if (index === -1) throw new Error('Product not found');
-    this.products[index] = { ...this.products[index], ...updates };
-    return this.products[index];
+  // --- Admin CRUD Operations (100% Backend API) ---
+
+  async createProduct(
+    data: Omit<Product, 'id' | 'createdAt'> | CreateProductParams
+  ): Promise<Product> {
+    const payload = {
+      name: data.name?.trim(),
+      category: data.category,
+      subcategory: data.subcategory?.trim() || 'General',
+      price: Number(data.price),
+      size: data.size || '50ml',
+      description: data.description?.trim(),
+      longDescription: (data.longDescription || data.description)?.trim(),
+      ingredients: Array.isArray(data.ingredients) ? data.ingredients : [],
+      activeIngredients: Array.isArray(data.activeIngredients) ? data.activeIngredients : [],
+      howToUse: data.howToUse || '',
+      skinTypes: Array.isArray(data.skinTypes) && data.skinTypes.length > 0 ? data.skinTypes : ['All Skin Types'],
+      image: data.image || (Array.isArray(data.images) && data.images[0]) || '',
+      rating: data.rating !== undefined && data.rating !== null ? Number(data.rating) : null,
+      reviewCount: data.reviewCount !== undefined && data.reviewCount !== null ? Number(data.reviewCount) : null,
+      badge: data.badge || null,
+      stock: data.stock !== undefined && data.stock !== null ? Number(data.stock) : 0,
+    };
+
+    const response = await this.request<Product>('/products', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+
+    if (response.data) {
+      return this.normalizeProduct(response.data);
+    }
+
+    throw new Error('Failed to create product formulation.');
+  }
+
+  async updateProduct(
+    id: string,
+    updates: Partial<Product> | UpdateProductParams
+  ): Promise<Product> {
+    const response = await this.request<Product>(`/products/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+
+    if (response.data) {
+      return this.normalizeProduct(response.data);
+    }
+
+    throw new Error(`Failed to update product formulation with ID ${id}.`);
   }
 
   async deleteProduct(id: string): Promise<boolean> {
-    await delay(150);
-    this.products = this.products.filter(p => p.id !== id && p._id !== id);
+    await this.request(`/products/${id}`, {
+      method: 'DELETE',
+    });
     return true;
   }
 }
 
 export const productService = new ProductService();
+export default productService;

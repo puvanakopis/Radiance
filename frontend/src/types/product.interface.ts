@@ -22,7 +22,7 @@ export type SkinConcern =
   | 'Sun Protection'
   | 'Hair Repair';
 
-export type ProductStatus = 'In Stock' | 'Low Stock' | 'Out of Stock';
+export type StockFilter = 'All' | 'In Stock' | 'Out of Stock';
 
 export type ProductSortOption =
   | 'featured'
@@ -87,11 +87,11 @@ export interface Product {
   skinTypes: SkinType[] | string[];
   image: string;
   images?: string[];
-  rating: number;
-  reviewCount: number;
-  reviews?: CustomerReview[];
+  rating: number | null;
+  reviewCount: number | null;
+  reviews?: CustomerReview[] | null;
   badge?: string | null;
-  status: ProductStatus;
+  stock: number; // Current Inventory Count
   createdAt: string;
   updatedAt?: string;
 }
@@ -127,7 +127,7 @@ export interface CreateProductParams {
   rating?: number;
   reviewCount?: number;
   badge?: string | null;
-  status?: ProductStatus;
+  stock?: number;
 }
 
 export interface UpdateProductParams extends Partial<CreateProductParams> {
@@ -143,7 +143,8 @@ export interface GetProductsQueryParams {
   maxPrice?: number;
   minRating?: number;
   badge?: string;
-  status?: ProductStatus | string;
+  stockFilter?: 'All' | 'In Stock' | 'Out of Stock' | string;
+  inStockOnly?: boolean;
   search?: string;
   q?: string;
   searchQuery?: string;
@@ -201,7 +202,7 @@ export interface ProductServiceType {
   getRelatedProducts(category: ProductCategory, currentId: string, limit?: number): Promise<Product[]>;
   getCategories(): Promise<Category[]>;
   getReviewsForProduct(productId: string): Promise<Review[]>;
-  addReview(review: Omit<Review, 'id' | 'date' | 'helpfulCount'>): Promise<Review>;
+  addReview(review: { productId: string; rating: number; feedback?: string; comment?: string; userName?: string }): Promise<Review>;
   createProduct(data: Omit<Product, 'id' | 'createdAt'> | CreateProductParams): Promise<Product>;
   updateProduct(id: string, updates: Partial<Product> | UpdateProductParams): Promise<Product>;
   deleteProduct(id: string): Promise<boolean>;

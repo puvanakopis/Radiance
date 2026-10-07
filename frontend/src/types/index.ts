@@ -29,12 +29,17 @@ export interface Customer {
   name: string;
   email: string;
   phone: string;
+  address?: string;
+  city?: string;
+  district?: string;
   addresses: Address[];
-  role: 'customer' | 'admin';
+  role: 'customer' | 'admin' | string;
   avatar?: string;
-  totalOrders: number;
-  totalSpend: number;
-  createdAt: string;
+  isActive?: boolean;
+  totalOrders?: number;
+  totalSpend?: number;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export type OrderStatus = 'Placed' | 'Confirmed' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled';
