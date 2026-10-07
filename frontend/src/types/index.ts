@@ -1,9 +1,11 @@
+import { Product } from './product.interface';
+
 export * from './product.interface';
 export * from './auth.interface';
 
 export interface CartItem {
   id: string;
-  product: import('./product.interface').Product;
+  product: Product;
   quantity: number;
   selectedSize: string;
 }
@@ -36,6 +38,7 @@ export interface Customer {
   role: 'customer' | 'admin' | string;
   avatar?: string;
   isActive?: boolean;
+  wishlist?: string[] | Product[];
   totalOrders?: number;
   totalSpend?: number;
   createdAt?: string;
