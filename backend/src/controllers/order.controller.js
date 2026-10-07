@@ -152,7 +152,7 @@ export async function createOrder(req, res, next) {
       const userLookupId = authUserId || customerId;
       await CustomerModel.findByIdAndUpdate(userLookupId, {
         $inc: { totalOrders: 1, totalSpend: finalTotal },
-      }).catch(() => {});
+      }).catch(() => { });
     }
 
     res.status(201).json({

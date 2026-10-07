@@ -237,20 +237,18 @@ export default function CheckoutPage() {
         ].map((s) => (
           <div key={s.num} className="flex items-center gap-2">
             <div
-              className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold ${
-                step === s.num
+              className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold ${step === s.num
                   ? 'bg-[#1A1A1A] text-[#FAF8F5]'
                   : step > s.num
-                  ? 'bg-[#8A9A86] text-white'
-                  : 'bg-[#EAE3D9]/60 text-[#1A1A1A]/60'
-              }`}
+                    ? 'bg-[#8A9A86] text-white'
+                    : 'bg-[#EAE3D9]/60 text-[#1A1A1A]/60'
+                }`}
             >
               {step > s.num ? <Check className="w-3.5 h-3.5" /> : s.num}
             </div>
             <span
-              className={`text-xs uppercase tracking-wider hidden sm:inline ${
-                step === s.num ? 'font-semibold text-[#1A1A1A]' : 'text-[#1A1A1A]/50'
-              }`}
+              className={`text-xs uppercase tracking-wider hidden sm:inline ${step === s.num ? 'font-semibold text-[#1A1A1A]' : 'text-[#1A1A1A]/50'
+                }`}
             >
               {s.title}
             </span>
@@ -414,11 +412,10 @@ export default function CheckoutPage() {
                 {/* PayHere Card */}
                 <label
                   onClick={() => setPaymentMethod('PayHere')}
-                  className={`flex items-start gap-4 p-5 rounded-2xl border-2 cursor-pointer transition-all ${
-                    paymentMethod === 'PayHere'
+                  className={`flex items-start gap-4 p-5 rounded-2xl border-2 cursor-pointer transition-all ${paymentMethod === 'PayHere'
                       ? 'border-[#1A1A1A] bg-[#FAF8F5]'
                       : 'border-[#1A1A1A]/10 hover:border-[#1A1A1A]/30'
-                  }`}
+                    }`}
                 >
                   <input
                     type="radio"
@@ -443,11 +440,10 @@ export default function CheckoutPage() {
                 {/* WhatsApp Order Card */}
                 <label
                   onClick={() => setPaymentMethod('WhatsApp')}
-                  className={`flex items-start gap-4 p-5 rounded-2xl border-2 cursor-pointer transition-all ${
-                    paymentMethod === 'WhatsApp'
+                  className={`flex items-start gap-4 p-5 rounded-2xl border-2 cursor-pointer transition-all ${paymentMethod === 'WhatsApp'
                       ? 'border-[#25D366] bg-[#25D366]/5'
                       : 'border-[#1A1A1A]/10 hover:border-[#1A1A1A]/30'
-                  }`}
+                    }`}
                 >
                   <input
                     type="radio"

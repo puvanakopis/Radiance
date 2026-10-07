@@ -18,8 +18,10 @@ app.use(
   cors({
     origin: (origin, callback) => {
       if (!origin) return callback(null, true);
+      // Allow configured frontend, vercel deployment domains, and localhost
       if (
         origin === ENV.FRONTEND_URL ||
+        origin.endsWith('.vercel.app') ||
         /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)
       ) {
         return callback(null, true);
@@ -31,6 +33,21 @@ app.use(
 );
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Serverless-safe Database Connection Middleware
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    console.error('[DB Connection Middleware Error]:', err.message);
+    res.status(500).json({
+      success: false,
+      message: 'Database connection error. Please ensure MongoDB Atlas cluster is reachable and network access allows connections (0.0.0.0/0).',
+      error: err.message,
+    });
+  }
+});
 
 // API Router Setup
 const apiRouter = Router();
@@ -46,10 +63,15 @@ apiRouter.use('/payments', paymentRoutes);
 
 // Health check endpoint
 apiRouter.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok', service: 'radiance-api', timestamp: new Date().toISOString() });
+  res.status(200).json({
+    status: 'ok',
+    service: 'radiance-api',
+    environment: ENV.NODE_ENV,
+    timestamp: new Date().toISOString(),
+  });
 });
 
-// Mount API router
+// Mount API router under /api
 app.use('/api', apiRouter);
 
 // Root Service Discovery Endpoint
@@ -65,6 +87,7 @@ app.get('/', (req, res) => {
       wishlist: '/api/wishlist',
       cart: '/api/cart',
       orders: '/api/orders',
+      payments: '/api/payments',
       health: '/api/health',
     },
   });
@@ -73,12 +96,11 @@ app.get('/', (req, res) => {
 // Centralized Error Handler Middleware
 app.use(errorHandler);
 
-// Connect to MongoDB and start HTTP Server
+// Connect to MongoDB and start HTTP Server (only in standalone Node.js environment, not in Vercel serverless)
 let server;
 
 async function startServer() {
   try {
-    // Connect to MongoDB
     await connectDB();
 
     server = app.listen(ENV.PORT, () => {
@@ -106,7 +128,11 @@ async function startServer() {
   }
 }
 
-startServer();
+// Only launch HTTP listener if running directly and not on Vercel
+const isVercel = Boolean(process.env.VERCEL || process.env.NOW_REGION);
+if (!isVercel && process.env.NODE_ENV !== 'test') {
+  startServer();
+}
 
 // Graceful shutdown handling
 process.on('SIGTERM', async () => {
