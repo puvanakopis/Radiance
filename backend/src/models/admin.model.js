@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import Counter from './counter.model.js';
 
-const UserSchema = new mongoose.Schema(
+const AdminSchema = new mongoose.Schema(
   {
     _id: {
       type: String,
@@ -29,25 +29,10 @@ const UserSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['ADMIN', 'CUSTOMER'],
-      default: 'CUSTOMER',
+      default: 'Admin',
+      immutable: true,
     },
     phone: {
-      type: String,
-      default: null,
-      trim: true,
-    },
-    address: {
-      type: String,
-      default: null,
-      trim: true,
-    },
-    city: {
-      type: String,
-      default: null,
-      trim: true,
-    },
-    district: {
       type: String,
       default: null,
       trim: true,
@@ -56,6 +41,10 @@ const UserSchema = new mongoose.Schema(
       type: String,
       default: null,
       trim: true,
+    },
+    permissions: {
+      type: [String],
+      default: ['all'],
     },
     isActive: {
       type: Boolean,
@@ -83,16 +72,16 @@ const UserSchema = new mongoose.Schema(
   }
 );
 
-UserSchema.pre('validate', async function () {
+AdminSchema.pre('validate', async function () {
   if (this.isNew && !this._id) {
     const counter = await Counter.findByIdAndUpdate(
-      'user',
+      'admin',
       { $inc: { seq: 1 } },
       { returnDocument: 'after', upsert: true }
     );
-    this._id = `user_${String(counter.seq).padStart(2, '0')}`;
+    this._id = `admin_${String(counter.seq).padStart(2, '0')}`;
   }
 });
 
-export const UserModel = mongoose.models.User || mongoose.model('User', UserSchema);
-export default UserModel;
+export const AdminModel = mongoose.models.Admin || mongoose.model('Admin', AdminSchema);
+export default AdminModel;

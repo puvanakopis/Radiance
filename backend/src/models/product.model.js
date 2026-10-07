@@ -116,10 +116,11 @@ const ProductSchema = new Schema(
       type: [CustomerReviewSchema],
       default: [],
     },
-    status: {
-      type: String,
-      enum: ['In Stock', 'Low Stock', 'Out of Stock'],
-      default: 'In Stock',
+    stock: {
+      type: Number,
+      required: [true, 'Stock count is required'],
+      min: [0, 'Stock count cannot be negative'],
+      default: 0,
       index: true,
     },
   },
