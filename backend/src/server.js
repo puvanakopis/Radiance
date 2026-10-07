@@ -7,6 +7,7 @@ import authRoutes from './routes/auth.routes.js';
 import productRoutes from './routes/product.routes.js';
 import customerRoutes from './routes/customer.routes.js';
 import wishlistRoutes from './routes/wishlist.routes.js';
+import orderRoutes from './routes/order.routes.js';
 
 export const app = express();
 
@@ -37,6 +38,7 @@ apiRouter.use('/auth', authRoutes);
 apiRouter.use('/products', productRoutes);
 apiRouter.use('/customers', customerRoutes);
 apiRouter.use('/wishlist', wishlistRoutes);
+apiRouter.use('/orders', orderRoutes);
 
 // Health check endpoint
 apiRouter.get('/health', (req, res) => {
@@ -57,6 +59,7 @@ app.get('/', (req, res) => {
       products: '/api/products',
       customers: '/api/customers',
       wishlist: '/api/wishlist',
+      orders: '/api/orders',
       health: '/api/health',
     },
   });

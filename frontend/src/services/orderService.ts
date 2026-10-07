@@ -1,110 +1,251 @@
-import { Order, OrderStatus } from '@/types';
+import { Order, OrderStatus, PaymentMethod, PaymentStatus, Address, OrderItem, OrderTimelineItem } from '@/types';
 
-const ORDERS_STORAGE_KEY = 'skinova_orders';
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+const TOKEN_STORAGE_KEY = 'skinova_jwt_token';
+
+export interface CreateOrderPayload {
+  customer?: {
+    id?: string;
+    name?: string;
+    email: string;
+    phone: string;
+  };
+  deliveryAddress: Address;
+  items: OrderItem[];
+  subtotal: number;
+  discount?: number;
+  shipping?: number;
+  total: number;
+  status?: OrderStatus;
+  paymentMethod?: PaymentMethod;
+  paymentStatus?: PaymentStatus;
+  paymentReference?: string;
+  notes?: string;
+}
+
+export interface OrderApiResponse<T = any> {
+  success: boolean;
+  message?: string;
+  count?: number;
+  pagination?: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+  data?: T;
+}
 
 class OrderService {
-  private getSavedOrders(): Order[] {
-    if (typeof window === 'undefined') return [];
-    try {
-      const stored = localStorage.getItem(ORDERS_STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) {
-          return parsed;
-        }
-      }
-    } catch {
-      // Fallback
-    }
-    return [];
+  private getToken(): string | null {
+    if (typeof window === 'undefined') return null;
+    return localStorage.getItem(TOKEN_STORAGE_KEY);
   }
 
-  private saveOrders(orders: Order[]): void {
-    if (typeof window !== 'undefined') {
-      try {
-        localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(orders));
-      } catch (err) {
-        console.warn('Failed to persist orders to local storage:', err);
-      }
-    }
-  }
+  private async request<T = any>(
+    endpoint: string,
+    options: RequestInit = {}
+  ): Promise<OrderApiResponse<T>> {
+    const url = `${API_BASE_URL}${endpoint}`;
+    const token = this.getToken();
 
-  async getOrders(): Promise<Order[]> {
-    await delay(100);
-    return this.getSavedOrders();
-  }
-
-  async getOrderById(id: string): Promise<Order | null> {
-    await delay(80);
-    const orders = this.getSavedOrders();
-    return orders.find(o => o.id === id || o.orderNumber === id) || null;
-  }
-
-  async getOrdersByCustomerId(customerId: string): Promise<Order[]> {
-    await delay(100);
-    const orders = this.getSavedOrders();
-    return orders.filter(
-      o =>
-        o.customer.id === customerId ||
-        o.customer.email === customerId ||
-        o.id === customerId
-    );
-  }
-
-  async createOrder(orderData: Omit<Order, 'id' | 'orderNumber' | 'date' | 'timeline'>): Promise<Order> {
-    await delay(200);
-    const orders = this.getSavedOrders();
-    const orderNumber = `VL-${Math.floor(10000 + Math.random() * 90000)}`;
-    const now = new Date().toISOString();
-    
-    const newOrder: Order = {
-      ...orderData,
-      id: `ord-${Date.now()}`,
-      orderNumber,
-      date: now,
-      timeline: [
-        { status: 'Placed', timestamp: now, description: 'Order submitted online', completed: true },
-        { 
-          status: 'Confirmed', 
-          timestamp: orderData.paymentMethod === 'PayHere' ? now : '', 
-          description: orderData.paymentMethod === 'PayHere' ? 'Payment processed via PayHere Gateway' : 'Awaiting confirmation', 
-          completed: orderData.paymentMethod === 'PayHere' 
-        },
-        { status: 'Processing', timestamp: '', description: 'Dispatched to cleanroom packing', completed: false },
-        { status: 'Shipped', timestamp: '', description: 'Courier pickup scheduled', completed: false },
-        { status: 'Delivered', timestamp: '', description: 'Delivered to doorstep', completed: false }
-      ]
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...((options.headers as Record<string, string>) || {}),
     };
 
-    orders.unshift(newOrder);
-    this.saveOrders(orders);
-    return newOrder;
+    let res: Response;
+    try {
+      res = await fetch(url, { ...options, headers });
+    } catch (err) {
+      console.error(`[OrderService] Network error connecting to ${url}:`, err);
+      throw new Error('Unable to connect to the backend server.');
+    }
+
+    let data: OrderApiResponse<T>;
+    try {
+      data = await res.json();
+    } catch {
+      data = {
+        success: false,
+        message: `Unexpected server response (HTTP ${res.status})`,
+      };
+    }
+
+    if (!res.ok || data.success === false) {
+      throw new Error(data.message || `Request failed with status ${res.status}`);
+    }
+
+    return data;
   }
 
+  private normalizeOrder(raw: any): Order {
+    if (!raw) return raw;
+    const id = String(raw.id || raw._id || '');
+
+    const items: OrderItem[] = Array.isArray(raw.items)
+      ? raw.items.map((item: any) => ({
+          productId: String(item.productId || item.id || ''),
+          productName: item.productName || item.name || 'Botanical Formulation',
+          productImage: item.productImage || item.image || '/images/products/placeholder.jpg',
+          size: item.size || '50ml',
+          price: Number(item.price) || 0,
+          quantity: Number(item.quantity) || 1,
+          sku: item.sku || item.productId || '',
+        }))
+      : [];
+
+    const timeline: OrderTimelineItem[] = Array.isArray(raw.timeline)
+      ? raw.timeline.map((t: any) => ({
+          status: t.status as OrderStatus,
+          timestamp: t.timestamp || '',
+          description: t.description || '',
+          completed: !!t.completed,
+        }))
+      : [];
+
+    const deliveryAddress: Address = raw.deliveryAddress
+      ? {
+          id: raw.deliveryAddress.id || `addr-${id}`,
+          label: raw.deliveryAddress.label || 'Default Address',
+          recipientName: raw.deliveryAddress.recipientName || raw.customer?.name || '',
+          phone: raw.deliveryAddress.phone || raw.customer?.phone || '',
+          street: raw.deliveryAddress.street || '',
+          apartment: raw.deliveryAddress.apartment || '',
+          city: raw.deliveryAddress.city || '',
+          district: raw.deliveryAddress.district || '',
+          postalCode: raw.deliveryAddress.postalCode || '00100',
+          country: raw.deliveryAddress.country || 'Sri Lanka',
+          isDefault: !!raw.deliveryAddress.isDefault,
+        }
+      : {
+          id: `addr-${id}`,
+          label: 'Default Address',
+          recipientName: raw.customer?.name || '',
+          phone: raw.customer?.phone || '',
+          street: '',
+          city: '',
+          district: '',
+          postalCode: '00100',
+          country: 'Sri Lanka',
+          isDefault: true,
+        };
+
+    return {
+      id,
+      orderNumber: raw.orderNumber || id,
+      date: raw.date || raw.createdAt || new Date().toISOString(),
+      customer: {
+        id: String(raw.customer?.id || raw.customer?._id || ''),
+        name: raw.customer?.name || 'Valued Patron',
+        email: raw.customer?.email || '',
+        phone: raw.customer?.phone || '',
+      },
+      deliveryAddress,
+      items,
+      subtotal: Number(raw.subtotal) || 0,
+      discount: Number(raw.discount) || 0,
+      shipping: Number(raw.shipping) || 450,
+      total: Number(raw.total) || 0,
+      status: (raw.status || 'Placed') as OrderStatus,
+      paymentMethod: (raw.paymentMethod || 'WhatsApp') as PaymentMethod,
+      paymentStatus: (raw.paymentStatus || 'Pending') as PaymentStatus,
+      paymentReference: raw.paymentReference || '',
+      trackingNumber: raw.trackingNumber || '',
+      notes: raw.notes || '',
+      timeline,
+    };
+  }
+
+  /**
+   * Fetch all orders (Admin overview or Customer self-order list)
+   */
+  async getOrders(params?: { status?: string; search?: string; page?: number; limit?: number }): Promise<Order[]> {
+    const searchParams = new URLSearchParams();
+    if (params?.status) searchParams.set('status', params.status);
+    if (params?.search) searchParams.set('search', params.search);
+    if (params?.page) searchParams.set('page', String(params.page));
+    if (params?.limit) searchParams.set('limit', String(params.limit));
+
+    const qs = searchParams.toString();
+    const endpoint = `/orders${qs ? `?${qs}` : ''}`;
+    const res = await this.request<any[]>(endpoint, { method: 'GET' });
+    const rawList = Array.isArray(res.data) ? res.data : [];
+    return rawList.map((item) => this.normalizeOrder(item));
+  }
+
+  /**
+   * Fetch orders for current authenticated customer
+   */
+  async getMyOrders(): Promise<Order[]> {
+    const res = await this.request<any[]>('/orders/my-orders', { method: 'GET' });
+    const rawList = Array.isArray(res.data) ? res.data : [];
+    return rawList.map((item) => this.normalizeOrder(item));
+  }
+
+  /**
+   * Fetch single order details by ID or Order Number
+   */
+  async getOrderById(id: string): Promise<Order | null> {
+    try {
+      const res = await this.request<any>(`/orders/${encodeURIComponent(id)}`, { method: 'GET' });
+      return res.data ? this.normalizeOrder(res.data) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Create a new order (Supports guest & authenticated customer checkout)
+   */
+  async createOrder(orderData: CreateOrderPayload): Promise<Order> {
+    const res = await this.request<any>('/orders', {
+      method: 'POST',
+      body: JSON.stringify(orderData),
+    });
+
+    if (!res.data) {
+      throw new Error(res.message || 'Failed to create order');
+    }
+
+    return this.normalizeOrder(res.data);
+  }
+
+  /**
+   * Update order status & timeline progression (Admin only)
+   */
   async updateOrderStatus(orderId: string, newStatus: OrderStatus): Promise<Order> {
-    await delay(150);
-    const orders = this.getSavedOrders();
-    const orderIndex = orders.findIndex(o => o.id === orderId || o.orderNumber === orderId);
-    if (orderIndex === -1) throw new Error('Order not found');
+    const res = await this.request<any>(`/orders/${encodeURIComponent(orderId)}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status: newStatus }),
+    });
 
-    const order = orders[orderIndex];
-    order.status = newStatus;
+    if (!res.data) {
+      throw new Error(res.message || 'Failed to update order status');
+    }
 
-    // Update timeline
-    const statuses: OrderStatus[] = ['Placed', 'Confirmed', 'Processing', 'Shipped', 'Delivered'];
-    const targetIdx = statuses.indexOf(newStatus);
+    return this.normalizeOrder(res.data);
+  }
 
-    order.timeline = statuses.map((st, idx) => ({
-      status: st,
-      timestamp: idx <= targetIdx ? (order.timeline[idx]?.timestamp || new Date().toISOString()) : '',
-      description: idx <= targetIdx ? `${st} step completed` : `Pending ${st}`,
-      completed: idx <= targetIdx
-    }));
+  /**
+   * Update order payment status & transaction reference (Admin only)
+   */
+  async updateOrderPayment(
+    orderId: string,
+    paymentStatus: PaymentStatus,
+    paymentReference?: string
+  ): Promise<Order> {
+    const res = await this.request<any>(`/orders/${encodeURIComponent(orderId)}/payment`, {
+      method: 'PATCH',
+      body: JSON.stringify({ paymentStatus, paymentReference }),
+    });
 
-    orders[orderIndex] = { ...order };
-    this.saveOrders(orders);
-    return orders[orderIndex];
+    if (!res.data) {
+      throw new Error(res.message || 'Failed to update payment status');
+    }
+
+    return this.normalizeOrder(res.data);
   }
 }
 

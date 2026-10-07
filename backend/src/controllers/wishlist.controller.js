@@ -10,12 +10,17 @@ export async function getWishlist(req, res, next) {
   try {
     const userId = req.user?.id || req.user?._id;
     if (!userId) {
-      throw new AppError('Authentication required.', 401);
+      return res.status(200).json({ success: true, count: 0, data: [] });
     }
 
     const customer = await CustomerModel.findById(userId);
     if (!customer) {
-      throw new AppError('Customer account not found.', 404);
+      // Return empty wishlist gracefully if the authenticated user is an admin or non-customer
+      return res.status(200).json({
+        success: true,
+        count: 0,
+        data: [],
+      });
     }
 
     // Populate the product details
@@ -61,7 +66,7 @@ export async function addToWishlist(req, res, next) {
 
     const customer = await CustomerModel.findById(userId);
     if (!customer) {
-      throw new AppError('Customer account not found.', 404);
+      throw new AppError('Wishlist is available for customer accounts only.', 403);
     }
 
     // Add product to customer's wishlist array (avoiding duplicates)
@@ -109,7 +114,12 @@ export async function removeFromWishlist(req, res, next) {
 
     const customer = await CustomerModel.findById(userId);
     if (!customer) {
-      throw new AppError('Customer account not found.', 404);
+      return res.status(200).json({
+        success: true,
+        message: 'Item removed.',
+        count: 0,
+        data: [],
+      });
     }
 
     // Remove product from wishlist array
@@ -152,7 +162,12 @@ export async function clearWishlist(req, res, next) {
 
     const customer = await CustomerModel.findById(userId);
     if (!customer) {
-      throw new AppError('Customer account not found.', 404);
+      return res.status(200).json({
+        success: true,
+        message: 'Wishlist cleared.',
+        count: 0,
+        data: [],
+      });
     }
 
     await CustomerModel.findByIdAndUpdate(
