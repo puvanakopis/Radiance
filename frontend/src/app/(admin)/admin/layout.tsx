@@ -6,7 +6,6 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard,
   Package,
-  Boxes,
   ShoppingBag,
   Users,
   ArrowLeft,
@@ -32,9 +31,9 @@ export default function AdminLayout({
   ];
 
   return (
-    <div className="min-h-screen bg-[#FAF8F5] text-[#1A1A1A] flex flex-col md:flex-row font-sans">
-      {/* Sidebar */}
-      <aside className="w-full md:w-64 bg-[#1A1A1A] text-[#FAF8F5] p-6 flex flex-col justify-between shrink-0 border-r border-white/10">
+    <div className="h-screen bg-[#FAF8F5] text-[#1A1A1A] flex flex-col md:flex-row font-sans overflow-hidden">
+      {/* Sidebar - Fixed to Screen Height */}
+      <aside className="w-full md:w-64 bg-[#1A1A1A] text-[#FAF8F5] p-6 flex flex-col justify-between shrink-0 border-r border-white/10 md:h-screen overflow-y-auto z-30">
         <div className="space-y-8">
           {/* Brand */}
           <div className="flex items-center justify-between">
@@ -106,9 +105,9 @@ export default function AdminLayout({
       </aside>
 
       {/* Main Admin Content Body */}
-      <main className="flex-1 flex flex-col overflow-y-auto min-h-screen">
+      <main className="flex-1 flex flex-col h-screen overflow-y-auto">
         {/* Top bar */}
-        <header className="bg-white border-b border-[#1A1A1A]/10 px-6 py-4 flex items-center justify-between">
+        <header className="bg-white/90 backdrop-blur-md border-b border-[#1A1A1A]/10 px-6 py-4 flex items-center justify-between sticky top-0 z-20 shrink-0">
           <div className="flex items-center gap-2">
             <ShieldCheck className="w-4 h-4 text-[#8A9A86]" />
             <span className="text-xs font-semibold uppercase tracking-wider text-[#1A1A1A]/70">

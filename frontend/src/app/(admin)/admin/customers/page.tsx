@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Users,
   Search,
@@ -9,9 +9,7 @@ import {
   ShieldCheck,
   UserCheck,
   UserX,
-  Plus,
   MapPin,
-  Calendar,
   Eye,
   Edit2,
   Trash2,
@@ -20,6 +18,11 @@ import {
   CheckCircle2,
   XCircle,
   Loader2,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  X,
+  ArrowUpDown,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -30,6 +33,9 @@ import { useToast } from '@/context/ToastContext';
 import { Customer } from '@/types';
 
 type StatusFilter = 'All' | 'Active' | 'Blocked';
+type SortOption = 'newest' | 'oldest' | 'name-asc' | 'name-desc' | 'email-asc';
+
+const ITEMS_PER_PAGE = 10;
 
 function getInitial(customer?: Customer | null): string {
   if (!customer) return 'C';
@@ -47,6 +53,9 @@ export default function AdminCustomersAndUsersPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('All');
+  const [districtFilter, setDistrictFilter] = useState<string>('All');
+  const [sortBy, setSortBy] = useState<SortOption>('newest');
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Modals state
   const [selectedUser, setSelectedUser] = useState<Customer | null>(null);
@@ -110,6 +119,70 @@ export default function AdminCustomersAndUsersPage() {
     return () => clearTimeout(timer);
   }, [loadCustomers]);
 
+  // Reset page to 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter, districtFilter, sortBy]);
+
+  // Extract unique districts for dropdown filter
+  const uniqueDistricts = useMemo(() => {
+    const set = new Set<string>();
+    customers.forEach((c) => {
+      if (c.district) set.add(c.district);
+      if (c.city) set.add(c.city);
+    });
+    return Array.from(set).sort();
+  }, [customers]);
+
+  // Filter & Sort customers in memory
+  const filteredCustomers = useMemo(() => {
+    return customers
+      .filter((c) => {
+        if (districtFilter !== 'All') {
+          const matches =
+            (c.district && c.district.toLowerCase() === districtFilter.toLowerCase()) ||
+            (c.city && c.city.toLowerCase() === districtFilter.toLowerCase());
+          if (!matches) return false;
+        }
+        return true;
+      })
+      .sort((a, b) => {
+        if (sortBy === 'newest') {
+          return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+        }
+        if (sortBy === 'oldest') {
+          return new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime();
+        }
+        if (sortBy === 'name-asc') {
+          return (a.name || '').localeCompare(b.name || '');
+        }
+        if (sortBy === 'name-desc') {
+          return (b.name || '').localeCompare(a.name || '');
+        }
+        if (sortBy === 'email-asc') {
+          return (a.email || '').localeCompare(b.email || '');
+        }
+        return 0;
+      });
+  }, [customers, districtFilter, sortBy]);
+
+  // Pagination calculation
+  const totalPages = Math.max(1, Math.ceil(filteredCustomers.length / ITEMS_PER_PAGE));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const startIndex = (safeCurrentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, filteredCustomers.length);
+  const paginatedCustomers = filteredCustomers.slice(startIndex, endIndex);
+
+  const handleResetFilters = () => {
+    setSearchQuery('');
+    setStatusFilter('All');
+    setDistrictFilter('All');
+    setSortBy('newest');
+    setCurrentPage(1);
+  };
+
+  const hasActiveFilters = searchQuery !== '' || statusFilter !== 'All' || districtFilter !== 'All' || sortBy !== 'newest';
+
   // Open Edit Modal and populate fields
   const handleOpenEdit = (customer: Customer) => {
     setEditingUser(customer);
@@ -157,7 +230,7 @@ export default function AdminCustomersAndUsersPage() {
       showToast({
         type: 'success',
         title: 'Customer Updated',
-        message: `Account details for ${updated.name} have been updated successfully.`,
+        message: `Account details for ${updated.name} updated successfully.`,
       });
 
       setEditingUser(null);
@@ -197,8 +270,8 @@ export default function AdminCustomersAndUsersPage() {
 
       showToast({
         type: 'success',
-        title: targetStatus ? 'Customer Unblocked' : 'Customer Blocked',
-        message: `${customer.name} is now ${targetStatus ? 'active and permitted to sign in.' : 'blocked from accessing the store.'}`,
+        title: targetStatus ? 'Patron Permitted' : 'Patron Suspended',
+        message: `${customer.name} is now ${targetStatus ? 'active and permitted.' : 'suspended from store sign-in.'}`,
       });
     } catch (err: any) {
       console.error('Toggle block failed:', err);
@@ -234,7 +307,7 @@ export default function AdminCustomersAndUsersPage() {
       showToast({
         type: 'success',
         title: 'Customer Deleted',
-        message: `Account ${deletingUser.name} has been removed.`,
+        message: `Account ${deletingUser.name} has been removed permanently.`,
       });
 
       setDeletingUser(null);
@@ -255,296 +328,412 @@ export default function AdminCustomersAndUsersPage() {
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <span className="text-[10px] uppercase tracking-[0.25em] font-medium text-[#C87D55] block mb-1">
+          <span className="text-[10px] uppercase tracking-[0.25em] font-semibold text-[#C87D55] block mb-1">
             Accounts & Directory
           </span>
           <h1 className="font-serif text-3xl text-[#1A1A1A]">Customer Management</h1>
           <p className="text-xs text-[#1A1A1A]/60 mt-1">
-            Manage customer profiles, inspect registration details, and block or unblock account access.
+            Inspect patron accounts, modify contact details, and administer account access permissions.
           </p>
         </div>
 
-        <Button
-          variant="outline"
-          size="sm"
-          icon={RotateCcw}
-          onClick={loadCustomers}
-          disabled={isLoading}
-        >
-          {isLoading ? 'Refreshing...' : 'Refresh List'}
-        </Button>
+        <div className="flex items-center gap-2.5">
+          <Button
+            variant="outline"
+            size="sm"
+            icon={RotateCcw}
+            onClick={loadCustomers}
+            disabled={isLoading}
+          >
+            {isLoading ? 'Syncing...' : 'Refresh Directory'}
+          </Button>
+        </div>
       </div>
 
-      {/* KPI Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white border border-[#1A1A1A]/10 rounded-2xl p-4 shadow-xs flex items-center gap-4">
+      {/* KPI Stats Bar */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Total Customers */}
+        <div className="bg-white border border-[#1A1A1A]/10 rounded-2xl p-4 shadow-xs flex items-center justify-between hover:border-[#1A1A1A]/20 transition-all">
+          <div>
+            <span className="text-[10px] uppercase tracking-wider text-[#1A1A1A]/50 font-semibold block">
+              Registered Patrons
+            </span>
+            <span className="font-serif text-2xl font-bold text-[#1A1A1A] mt-0.5 block">
+              {stats.totalCustomers || customers.length}
+            </span>
+            <span className="text-[10px] text-[#1A1A1A]/60 mt-0.5 block">
+              Total member directory
+            </span>
+          </div>
           <div className="w-10 h-10 rounded-xl bg-[#FAF8F5] border border-[#1A1A1A]/10 flex items-center justify-center text-[#1A1A1A]">
             <Users className="w-5 h-5" />
           </div>
-          <div>
-            <span className="text-[10px] uppercase tracking-wider text-[#1A1A1A]/50 font-semibold block">
-              Total Customers
-            </span>
-            <span className="font-serif text-2xl font-bold text-[#1A1A1A]">
-              {stats.totalCustomers || customers.length}
-            </span>
-          </div>
         </div>
 
-        <div className="bg-white border border-[#1A1A1A]/10 rounded-2xl p-4 shadow-xs flex items-center gap-4">
-          <div className="w-10 h-10 rounded-xl bg-[#5B7065]/10 border border-[#5B7065]/20 flex items-center justify-center text-[#5B7065]">
-            <CheckCircle2 className="w-5 h-5" />
-          </div>
+        {/* Active Customers */}
+        <div className="bg-white border border-[#1A1A1A]/10 rounded-2xl p-4 shadow-xs flex items-center justify-between hover:border-[#1A1A1A]/20 transition-all">
           <div>
             <span className="text-[10px] uppercase tracking-wider text-[#5B7065] font-semibold block">
               Active Patrons
             </span>
-            <span className="font-serif text-2xl font-bold text-[#1A1A1A]">
+            <span className="font-serif text-2xl font-bold text-[#1A1A1A] mt-0.5 block">
               {stats.activeCustomers}
             </span>
+            <span className="text-[10px] text-[#5B7065] mt-0.5 block">
+              Permitted for checkout & rituals
+            </span>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-[#5B7065]/10 border border-[#5B7065]/20 flex items-center justify-center text-[#5B7065]">
+            <CheckCircle2 className="w-5 h-5" />
           </div>
         </div>
 
-        <div className="bg-white border border-[#1A1A1A]/10 rounded-2xl p-4 shadow-xs flex items-center gap-4">
+        {/* Blocked / Suspended */}
+        <div className="bg-white border border-[#1A1A1A]/10 rounded-2xl p-4 shadow-xs flex items-center justify-between hover:border-[#1A1A1A]/20 transition-all">
+          <div>
+            <span className="text-[10px] uppercase tracking-wider text-[#8B3A2B] font-semibold block">
+              Suspended Accounts
+            </span>
+            <span className="font-serif text-2xl font-bold text-[#1A1A1A] mt-0.5 block">
+              {stats.blockedCustomers}
+            </span>
+            <span className="text-[10px] text-[#8B3A2B] mt-0.5 block">
+              Restricted from signing in
+            </span>
+          </div>
           <div className="w-10 h-10 rounded-xl bg-[#8B3A2B]/10 border border-[#8B3A2B]/20 flex items-center justify-center text-[#8B3A2B]">
             <XCircle className="w-5 h-5" />
           </div>
+        </div>
+
+        {/* Engagement / Verification */}
+        <div className="bg-white border border-[#1A1A1A]/10 rounded-2xl p-4 shadow-xs flex items-center justify-between hover:border-[#1A1A1A]/20 transition-all">
           <div>
-            <span className="text-[10px] uppercase tracking-wider text-[#8B3A2B] font-semibold block">
-              Blocked / Suspended
+            <span className="text-[10px] uppercase tracking-wider text-[#C87D55] font-semibold block">
+              Active Rate
             </span>
-            <span className="font-serif text-2xl font-bold text-[#1A1A1A]">
-              {stats.blockedCustomers}
+            <span className="font-serif text-2xl font-bold text-[#1A1A1A] mt-0.5 block">
+              {stats.totalCustomers > 0 ? Math.round((stats.activeCustomers / stats.totalCustomers) * 100) : 100}%
             </span>
+            <span className="text-[10px] text-[#C87D55] mt-0.5 block">
+              High tier patronage health
+            </span>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-[#C87D55]/10 border border-[#C87D55]/20 flex items-center justify-center text-[#C87D55]">
+            <ShieldCheck className="w-5 h-5" />
           </div>
         </div>
       </div>
 
-      {/* Filter and Search Bar */}
-      <div className="bg-white border border-[#1A1A1A]/10 rounded-3xl p-4 sm:p-6 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="relative flex-1 w-full sm:w-auto">
-          <Search className="w-4 h-4 text-[#1A1A1A]/40 absolute left-3.5 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by name, email, phone, city, or district..."
-            className="w-full pl-10 pr-4 py-2.5 bg-[#FAF8F5] border border-[#1A1A1A]/10 rounded-full text-xs text-[#1A1A1A] outline-none focus:border-[#C87D55]"
-          />
-        </div>
+      {/* Filter and Search Bar with Dropdowns */}
+      <div className="bg-white border border-[#1A1A1A]/10 rounded-3xl p-4 sm:p-5 shadow-xs space-y-3">
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+          {/* Search Box */}
+          <div className="relative flex-1">
+            <Search className="w-4 h-4 text-[#1A1A1A]/40 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by patron name, email, contact phone, or location..."
+              className="w-full pl-10 pr-9 py-2.5 bg-[#FAF8F5] border border-[#1A1A1A]/10 rounded-full text-xs text-[#1A1A1A] outline-none focus:border-[#C87D55] transition-all placeholder:text-[#1A1A1A]/40"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#1A1A1A]/40 hover:text-[#1A1A1A] p-0.5 cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
 
-        <div className="flex items-center gap-1.5 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
-          <button
-            onClick={() => setStatusFilter('All')}
-            className={`px-3.5 py-1.5 rounded-full text-xs uppercase tracking-wider whitespace-nowrap transition-colors cursor-pointer ${
-              statusFilter === 'All'
-                ? 'bg-[#1A1A1A] text-[#FAF8F5] font-semibold'
-                : 'bg-[#FAF8F5] text-[#1A1A1A]/70 hover:text-[#1A1A1A]'
-            }`}
-          >
-            All ({customers.length})
-          </button>
-          <button
-            onClick={() => setStatusFilter('Active')}
-            className={`px-3.5 py-1.5 rounded-full text-xs uppercase tracking-wider whitespace-nowrap transition-colors cursor-pointer ${
-              statusFilter === 'Active'
-                ? 'bg-[#5B7065] text-white font-semibold'
-                : 'bg-[#FAF8F5] text-[#1A1A1A]/70 hover:text-[#1A1A1A]'
-            }`}
-          >
-            Active ({stats.activeCustomers})
-          </button>
-          <button
-            onClick={() => setStatusFilter('Blocked')}
-            className={`px-3.5 py-1.5 rounded-full text-xs uppercase tracking-wider whitespace-nowrap transition-colors cursor-pointer ${
-              statusFilter === 'Blocked'
-                ? 'bg-[#8B3A2B] text-white font-semibold'
-                : 'bg-[#FAF8F5] text-[#1A1A1A]/70 hover:text-[#1A1A1A]'
-            }`}
-          >
-            Blocked ({stats.blockedCustomers})
-          </button>
+          {/* Dropdown Filters Group */}
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5">
+            {/* Account Status Dropdown */}
+            <div className="relative flex-1 sm:flex-initial min-w-[150px]">
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+                className="w-full appearance-none pl-3.5 pr-8 py-2.5 bg-[#FAF8F5] border border-[#1A1A1A]/10 hover:border-[#1A1A1A]/30 rounded-full text-xs font-medium text-[#1A1A1A] outline-none focus:border-[#C87D55] transition-colors cursor-pointer"
+              >
+                <option value="All">Status: All Patrons</option>
+                <option value="Active">Status: Active Patrons</option>
+                <option value="Blocked">Status: Suspended / Blocked</option>
+              </select>
+              <ChevronDown className="w-3.5 h-3.5 text-[#1A1A1A]/40 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
+
+            {/* Location / District Dropdown */}
+            <div className="relative flex-1 sm:flex-initial min-w-[150px]">
+              <select
+                value={districtFilter}
+                onChange={(e) => setDistrictFilter(e.target.value)}
+                className="w-full appearance-none pl-3.5 pr-8 py-2.5 bg-[#FAF8F5] border border-[#1A1A1A]/10 hover:border-[#1A1A1A]/30 rounded-full text-xs font-medium text-[#1A1A1A] outline-none focus:border-[#C87D55] transition-colors cursor-pointer"
+              >
+                <option value="All">Location: All Regions</option>
+                {uniqueDistricts.map((d) => (
+                  <option key={d} value={d}>Location: {d}</option>
+                ))}
+              </select>
+              <ChevronDown className="w-3.5 h-3.5 text-[#1A1A1A]/40 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
+
+            {/* Sort Dropdown */}
+            <div className="relative flex-1 sm:flex-initial min-w-[160px]">
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as SortOption)}
+                className="w-full appearance-none pl-3.5 pr-8 py-2.5 bg-[#FAF8F5] border border-[#1A1A1A]/10 hover:border-[#1A1A1A]/30 rounded-full text-xs font-medium text-[#1A1A1A] outline-none focus:border-[#C87D55] transition-colors cursor-pointer"
+              >
+                <option value="newest">Sort: Newest Registered</option>
+                <option value="oldest">Sort: Oldest Registered</option>
+                <option value="name-asc">Name: A to Z</option>
+                <option value="name-desc">Name: Z to A</option>
+                <option value="email-asc">Email: A to Z</option>
+              </select>
+              <ArrowUpDown className="w-3.5 h-3.5 text-[#1A1A1A]/40 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
+
+            {/* Reset Filters button */}
+            {hasActiveFilters && (
+              <button
+                onClick={handleResetFilters}
+                className="px-3 py-2 rounded-full border border-[#1A1A1A]/10 text-xs text-[#1A1A1A]/60 hover:text-[#C87D55] hover:border-[#C87D55]/30 bg-[#FAF8F5] transition-colors cursor-pointer whitespace-nowrap inline-flex items-center gap-1"
+                title="Reset all filters"
+              >
+                <RotateCcw className="w-3 h-3" />
+                <span>Reset</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Grid of Customers */}
-      {isLoading ? (
-        <div className="bg-white border border-[#1A1A1A]/10 rounded-3xl p-12 text-center flex flex-col items-center justify-center gap-3">
-          <Loader2 className="w-8 h-8 text-[#C87D55] animate-spin" />
-          <p className="text-xs text-[#1A1A1A]/60">Retrieving customer accounts...</p>
-        </div>
-      ) : customers.length === 0 ? (
-        <div className="bg-white border border-[#1A1A1A]/10 rounded-3xl p-12 text-center space-y-3">
-          <Users className="w-10 h-10 text-[#1A1A1A]/30 mx-auto" />
-          <h3 className="font-serif text-lg text-[#1A1A1A]">No Customer Accounts Found</h3>
-          <p className="text-xs text-[#1A1A1A]/60 max-w-sm mx-auto">
-            {searchQuery
-              ? `No registered accounts matching "${searchQuery}". Try clearing your search query.`
-              : 'There are currently no customer accounts recorded in the database.'}
-          </p>
-          {searchQuery && (
-            <Button variant="outline" size="sm" onClick={() => setSearchQuery('')}>
-              Clear Search
-            </Button>
-          )}
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {customers.map((cust) => {
-            const isBlocked = cust.isActive === false;
-            const isActionBusy = actionLoadingId === cust.id;
-
-            return (
-              <div
-                key={cust.id}
-                className={`bg-white border rounded-3xl p-6 shadow-xs flex flex-col justify-between space-y-4 transition-all ${
-                  isBlocked
-                    ? 'border-[#8B3A2B]/30 bg-[#FAF8F5]/40 opacity-80'
-                    : 'border-[#1A1A1A]/10 hover:border-[#1A1A1A]/30'
-                }`}
-              >
-                <div className="flex items-start gap-4">
-                  {cust.avatar ? (
-                    <img
-                      src={cust.avatar}
-                      alt={cust.name}
-                      className="w-14 h-14 rounded-2xl object-cover bg-[#EAE3D9]/40 border border-[#1A1A1A]/5 shrink-0"
-                    />
-                  ) : (
-                    <div className="w-14 h-14 rounded-2xl bg-[#EAE3D9] border border-[#1A1A1A]/10 text-[#C87D55] font-serif text-2xl font-bold flex items-center justify-center shrink-0 uppercase select-none shadow-xs">
-                      {getInitial(cust)}
+      {/* Unified Customers Table */}
+      <div className="bg-white border border-[#1A1A1A]/10 rounded-3xl overflow-hidden shadow-xs">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr className="border-b border-[#1A1A1A]/10 bg-[#FAF8F5]/80 text-[#1A1A1A]/60 uppercase tracking-widest font-semibold">
+                <th className="py-4 px-6">Patron Profile</th>
+                <th className="py-4 px-6">Contact & Email</th>
+                <th className="py-4 px-6">Delivery Destination</th>
+                <th className="py-4 px-6">Member Since</th>
+                <th className="py-4 px-6">Account Status</th>
+                <th className="py-4 px-6 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#1A1A1A]/10">
+              {isLoading ? (
+                <tr>
+                  <td colSpan={6} className="py-12 text-center text-[#1A1A1A]/50">
+                    <div className="flex items-center justify-center gap-2">
+                      <div className="w-4 h-4 rounded-full border-2 border-[#C87D55] border-t-transparent animate-spin" />
+                      <span>Loading patron accounts...</span>
                     </div>
-                  )}
-                  <div className="flex-1 min-w-0 space-y-1 text-xs">
-                    <div className="flex items-center justify-between gap-2">
-                      <h3 className="font-serif text-base font-semibold text-[#1A1A1A] truncate">
-                        {cust.name}
-                      </h3>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <span className="text-[10px] text-[#1A1A1A]/40 font-mono">
-                          {cust.id}
-                        </span>
-                        {isBlocked ? (
-                          <Badge variant="rose" size="xs">
-                            Blocked
-                          </Badge>
-                        ) : (
-                          <Badge variant="sage" size="xs">
-                            Active
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-
-                    <p className="text-[#1A1A1A]/60 flex items-center gap-1.5 truncate">
-                      <Mail className="w-3.5 h-3.5 text-[#1A1A1A]/40 shrink-0" /> {cust.email}
-                    </p>
-
-                    <p className="text-[#1A1A1A]/60 flex items-center gap-1.5">
-                      <Phone className="w-3.5 h-3.5 text-[#1A1A1A]/40 shrink-0" />{' '}
-                      {cust.phone || 'No phone recorded'}
-                    </p>
-
-                    {(cust.city || cust.district) && (
-                      <p className="text-[#1A1A1A]/60 flex items-center gap-1.5 truncate">
-                        <MapPin className="w-3.5 h-3.5 text-[#1A1A1A]/40 shrink-0" />{' '}
-                        {[cust.city, cust.district].filter(Boolean).join(', ')}
+                  </td>
+                </tr>
+              ) : paginatedCustomers.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-16 text-center">
+                    <div className="max-w-md mx-auto space-y-3">
+                      <Users className="w-10 h-10 text-[#1A1A1A]/20 mx-auto" />
+                      <h3 className="font-serif text-lg text-[#1A1A1A]">No Customer Accounts Found</h3>
+                      <p className="text-xs text-[#1A1A1A]/60">
+                        {hasActiveFilters
+                          ? 'No patron accounts match the selected filters or search keyword.'
+                          : 'There are currently no customer profiles stored.'}
                       </p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Bottom action controls */}
-                <div className="pt-3 border-t border-[#1A1A1A]/10 flex items-center justify-between text-xs">
-                  <div>
-                    <span className="text-[10px] uppercase tracking-wider text-[#1A1A1A]/50 block">
-                      Account Status
-                    </span>
-                    <span
-                      className={`font-semibold flex items-center gap-1 text-[11px] ${
-                        isBlocked ? 'text-[#8B3A2B]' : 'text-[#5B7065]'
-                      }`}
-                    >
-                      {isBlocked ? (
-                        <>
-                          <XCircle className="w-3 h-3" /> Suspended
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle2 className="w-3 h-3" /> Permitted
-                        </>
+                      {hasActiveFilters && (
+                        <Button variant="outline" size="sm" onClick={handleResetFilters}>
+                          Clear Filters
+                        </Button>
                       )}
-                    </span>
-                  </div>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                paginatedCustomers.map((cust) => {
+                  const isBlocked = cust.isActive === false;
+                  const isActionBusy = actionLoadingId === cust.id;
+                  const formattedDate = cust.createdAt
+                    ? new Date(cust.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+                    : '—';
 
-                  <div className="flex items-center gap-1.5">
-                    {/* Inspect Button */}
-                    <button
-                      onClick={() => setSelectedUser(cust)}
-                      className="p-2 rounded-xl border border-[#1A1A1A]/10 hover:border-[#1A1A1A] text-[#1A1A1A] hover:bg-[#FAF8F5] transition-colors cursor-pointer inline-flex items-center gap-1 text-xs font-medium"
-                      title="Inspect full details"
-                    >
-                      <Eye className="w-3.5 h-3.5" />
-                      <span className="hidden sm:inline">Inspect</span>
-                    </button>
+                  return (
+                    <tr key={cust.id} className="hover:bg-[#FAF8F5]/50 transition-colors">
+                      {/* Patron Profile & Avatar */}
+                      <td className="py-4 px-6">
+                        <div className="flex items-center gap-3">
+                          {cust.avatar ? (
+                            <img
+                              src={cust.avatar}
+                              alt={cust.name}
+                              className="w-11 h-11 rounded-xl object-cover bg-[#EAE3D9]/40 border border-[#1A1A1A]/5 shrink-0"
+                            />
+                          ) : (
+                            <div className="w-11 h-11 rounded-xl bg-[#EAE3D9] border border-[#1A1A1A]/10 text-[#C87D55] font-serif text-lg font-bold flex items-center justify-center shrink-0 uppercase select-none shadow-xs">
+                              {getInitial(cust)}
+                            </div>
+                          )}
+                          <div>
+                            <span className="font-serif text-sm font-medium text-[#1A1A1A] block">
+                              {cust.name}
+                            </span>
+                            <span className="text-[10px] text-[#1A1A1A]/40 font-mono">
+                              ID: {cust.id}
+                            </span>
+                          </div>
+                        </div>
+                      </td>
 
-                    {/* Edit Button */}
-                    <button
-                      onClick={() => handleOpenEdit(cust)}
-                      className="p-2 rounded-xl border border-[#1A1A1A]/10 hover:border-[#1A1A1A] text-[#1A1A1A] hover:bg-[#FAF8F5] transition-colors cursor-pointer inline-flex items-center gap-1 text-xs font-medium"
-                      title="Edit Customer"
-                    >
-                      <Edit2 className="w-3.5 h-3.5 text-[#C87D55]" />
-                      <span className="hidden sm:inline">Edit</span>
-                    </button>
+                      {/* Contact & Email */}
+                      <td className="py-4 px-6">
+                        <p className="font-medium text-[#1A1A1A] flex items-center gap-1.5 truncate max-w-[200px]">
+                          <Mail className="w-3 h-3 text-[#1A1A1A]/40 shrink-0" />
+                          {cust.email}
+                        </p>
+                        <p className="text-[10px] text-[#1A1A1A]/50 flex items-center gap-1.5 mt-0.5">
+                          <Phone className="w-3 h-3 text-[#1A1A1A]/40 shrink-0" />
+                          {cust.phone || 'No phone on record'}
+                        </p>
+                      </td>
 
-                    {/* Toggle Block / Unblock Button */}
-                    <button
-                      onClick={() => handleToggleBlock(cust)}
-                      disabled={isActionBusy}
-                      className={`p-2 rounded-xl border transition-colors cursor-pointer inline-flex items-center gap-1 text-xs font-medium ${
-                        isBlocked
-                          ? 'border-[#5B7065]/30 bg-[#5B7065]/10 text-[#5B7065] hover:bg-[#5B7065] hover:text-white'
-                          : 'border-[#8B3A2B]/30 bg-[#8B3A2B]/10 text-[#8B3A2B] hover:bg-[#8B3A2B] hover:text-white'
-                      }`}
-                      title={isBlocked ? 'Unblock customer' : 'Block customer'}
-                    >
-                      {isActionBusy ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      ) : isBlocked ? (
-                        <>
-                          <UserCheck className="w-3.5 h-3.5" />
-                          <span>Unblock</span>
-                        </>
-                      ) : (
-                        <>
-                          <UserX className="w-3.5 h-3.5" />
-                          <span>Block</span>
-                        </>
-                      )}
-                    </button>
+                      {/* Delivery Destination */}
+                      <td className="py-4 px-6 text-[#1A1A1A]/80">
+                        {cust.city || cust.district || cust.address ? (
+                          <div>
+                            <p className="font-medium text-[#1A1A1A] truncate max-w-[180px]">
+                              {[cust.city, cust.district].filter(Boolean).join(', ') || cust.address}
+                            </p>
+                            {cust.address && (cust.city || cust.district) && (
+                              <span className="block text-[10px] text-[#1A1A1A]/50 truncate max-w-[180px]">
+                                {cust.address}
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-[#1A1A1A]/40 italic">No destination saved</span>
+                        )}
+                      </td>
 
-                    {/* Delete Button */}
-                    <button
-                      onClick={() => setDeletingUser(cust)}
-                      className="p-2 rounded-xl border border-[#1A1A1A]/10 hover:border-[#8B3A2B] text-[#1A1A1A]/50 hover:text-[#8B3A2B] hover:bg-[#8B3A2B]/5 transition-colors cursor-pointer"
-                      title="Delete Customer"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+                      {/* Member Since */}
+                      <td className="py-4 px-6 text-[#1A1A1A]/70">
+                        <span>{formattedDate}</span>
+                      </td>
+
+                      {/* Account Status */}
+                      <td className="py-4 px-6">
+                        <Badge
+                          variant={isBlocked ? 'rose' : 'sage'}
+                          size="xs"
+                        >
+                          {isBlocked ? 'Suspended' : 'Active Patron'}
+                        </Badge>
+                      </td>
+
+                      {/* Actions */}
+                      <td className="py-4 px-6 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          {/* Inspect */}
+                          <button
+                            onClick={() => setSelectedUser(cust)}
+                            className="p-2 rounded-xl border border-[#1A1A1A]/10 hover:border-[#1A1A1A] text-[#1A1A1A] hover:bg-[#FAF8F5] transition-colors cursor-pointer"
+                            title="Inspect full details"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                          </button>
+
+                          {/* Edit */}
+                          <button
+                            onClick={() => handleOpenEdit(cust)}
+                            className="p-2 rounded-xl border border-[#1A1A1A]/10 hover:border-[#C87D55] text-[#C87D55] hover:bg-[#C87D55]/10 transition-colors cursor-pointer"
+                            title="Edit customer account"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+
+                          {/* Block / Unblock Toggle */}
+                          <button
+                            onClick={() => handleToggleBlock(cust)}
+                            disabled={isActionBusy}
+                            className={`p-2 rounded-xl border transition-colors cursor-pointer ${
+                              isBlocked
+                                ? 'border-[#5B7065]/30 bg-[#5B7065]/10 text-[#5B7065] hover:bg-[#5B7065] hover:text-white'
+                                : 'border-[#8B3A2B]/30 bg-[#8B3A2B]/10 text-[#8B3A2B] hover:bg-[#8B3A2B] hover:text-white'
+                            }`}
+                            title={isBlocked ? 'Permit / Unblock account' : 'Suspend / Block account'}
+                          >
+                            {isActionBusy ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : isBlocked ? (
+                              <UserCheck className="w-3.5 h-3.5" />
+                            ) : (
+                              <UserX className="w-3.5 h-3.5" />
+                            )}
+                          </button>
+
+                          {/* Delete */}
+                          <button
+                            onClick={() => setDeletingUser(cust)}
+                            className="p-2 rounded-xl border border-[#1A1A1A]/10 hover:border-[#8B3A2B] text-[#1A1A1A]/50 hover:text-[#8B3A2B] hover:bg-[#8B3A2B]/5 transition-colors cursor-pointer"
+                            title="Delete customer record"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
         </div>
-      )}
+
+        {/* Table Footer with Pagination */}
+        <div className="p-4 sm:px-6 bg-[#FAF8F5]/60 border-t border-[#1A1A1A]/10 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[#1A1A1A]/60">
+          <div>
+            <span>
+              Showing <strong className="text-[#1A1A1A]">{filteredCustomers.length === 0 ? 0 : startIndex + 1}–{endIndex}</strong> of <strong className="text-[#1A1A1A]">{filteredCustomers.length}</strong> registered patron accounts
+              {filteredCustomers.length !== customers.length && ` (filtered from ${customers.length})`}
+            </span>
+          </div>
+
+          {/* Previous / Next Pagination Controls */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={safeCurrentPage <= 1}
+              className="px-3 py-1.5 rounded-full border border-[#1A1A1A]/10 hover:border-[#1A1A1A] bg-white text-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-all flex items-center gap-1 font-medium cursor-pointer"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+              <span>Previous</span>
+            </button>
+
+            <span className="px-3 py-1 bg-[#FAF8F5] border border-[#1A1A1A]/10 rounded-full font-medium text-[11px] text-[#1A1A1A]">
+              Page {safeCurrentPage} of {totalPages}
+            </span>
+
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={safeCurrentPage >= totalPages || filteredCustomers.length === 0}
+              className="px-3 py-1.5 rounded-full border border-[#1A1A1A]/10 hover:border-[#1A1A1A] bg-white text-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-all flex items-center gap-1 font-medium cursor-pointer"
+            >
+              <span>Next</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      </div>
 
       {/* Inspect Customer Modal */}
       <Modal
         isOpen={!!selectedUser}
         onClose={() => setSelectedUser(null)}
         title={selectedUser?.name || 'Customer Details'}
+        subtitle={`Member ID: ${selectedUser?.id}`}
         maxWidth="md"
       >
         {selectedUser && (
@@ -568,7 +757,7 @@ export default function AdminCustomersAndUsersPage() {
                   </h3>
                   {selectedUser.isActive === false ? (
                     <Badge variant="rose" size="xs">
-                      Blocked
+                      Suspended
                     </Badge>
                   ) : (
                     <Badge variant="sage" size="xs">
@@ -603,7 +792,7 @@ export default function AdminCustomersAndUsersPage() {
                 </span>
                 <span className="font-serif text-sm font-semibold text-[#1A1A1A]">
                   {selectedUser.createdAt
-                    ? new Date(selectedUser.createdAt).toLocaleDateString(undefined, {
+                    ? new Date(selectedUser.createdAt).toLocaleDateString('en-GB', {
                         year: 'numeric',
                         month: 'short',
                         day: 'numeric',
@@ -623,13 +812,13 @@ export default function AdminCustomersAndUsersPage() {
                   {selectedUser.address || 'No street address specified'}
                 </p>
                 <p className="text-[#1A1A1A]/60">
-                  City: {selectedUser.city || '—'} | District: {selectedUser.district || '—'}
+                  City: {selectedUser.city || '—'} • District: {selectedUser.district || '—'}
                 </p>
               </div>
             </div>
 
             {/* Modal Actions */}
-            <div className="pt-2 flex items-center justify-between">
+            <div className="pt-2 flex items-center justify-between border-t border-[#1A1A1A]/10">
               <button
                 onClick={() => handleToggleBlock(selectedUser)}
                 className={`px-3 py-2 rounded-xl text-xs font-medium cursor-pointer transition-colors ${
@@ -638,7 +827,7 @@ export default function AdminCustomersAndUsersPage() {
                     : 'bg-[#8B3A2B] text-white hover:bg-[#722f23]'
                 }`}
               >
-                {selectedUser.isActive === false ? 'Unblock Customer' : 'Block Customer'}
+                {selectedUser.isActive === false ? 'Permit / Unblock' : 'Suspend Account'}
               </button>
 
               <div className="flex gap-2">
@@ -654,7 +843,7 @@ export default function AdminCustomersAndUsersPage() {
                   Edit Profile
                 </Button>
                 <Button variant="primary" size="sm" onClick={() => setSelectedUser(null)}>
-                  Done
+                  Close
                 </Button>
               </div>
             </div>
@@ -667,20 +856,21 @@ export default function AdminCustomersAndUsersPage() {
         isOpen={!!editingUser}
         onClose={() => setEditingUser(null)}
         title={`Edit Customer: ${editingUser?.name || ''}`}
+        subtitle="Update registered name, contact channels, and system privileges"
         maxWidth="md"
       >
         {editingUser && (
           <form onSubmit={handleUpdateCustomer} className="space-y-4 text-xs">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Input
-                label="First Name"
+                label="First Name *"
                 placeholder="e.g. Kasun"
                 value={editFirstName}
                 onChange={(e) => setEditFirstName(e.target.value)}
                 required
               />
               <Input
-                label="Last Name"
+                label="Last Name *"
                 placeholder="e.g. Perera"
                 value={editLastName}
                 onChange={(e) => setEditLastName(e.target.value)}
@@ -689,7 +879,7 @@ export default function AdminCustomersAndUsersPage() {
             </div>
 
             <Input
-              label="Email Address"
+              label="Email Address *"
               type="email"
               placeholder="customer@domain.com"
               value={editEmail}
@@ -729,7 +919,7 @@ export default function AdminCustomersAndUsersPage() {
             {/* Account Active State Radio */}
             <div className="space-y-1.5">
               <label className="text-[10px] uppercase tracking-wider font-semibold text-[#1A1A1A]/60 block">
-                Account Status
+                Account Privileges
               </label>
               <div className="grid grid-cols-2 gap-3">
                 <button
@@ -741,11 +931,11 @@ export default function AdminCustomersAndUsersPage() {
                       : 'border-[#1A1A1A]/15 bg-white text-[#1A1A1A] hover:border-[#1A1A1A]/40'
                   }`}
                 >
-                  <p className="flex items-center gap-1.5">
+                  <p className="flex items-center gap-1.5 font-medium">
                     <CheckCircle2 className="w-4 h-4 text-[#5B7065]" /> Active Patron
                   </p>
                   <p className="text-[10px] text-[#1A1A1A]/50 mt-0.5">
-                    Permitted to sign in and place orders
+                    Permitted to sign in and order
                   </p>
                 </button>
 
@@ -758,17 +948,17 @@ export default function AdminCustomersAndUsersPage() {
                       : 'border-[#1A1A1A]/15 bg-white text-[#1A1A1A] hover:border-[#1A1A1A]/40'
                   }`}
                 >
-                  <p className="flex items-center gap-1.5">
-                    <XCircle className="w-4 h-4 text-[#8B3A2B]" /> Blocked / Suspended
+                  <p className="flex items-center gap-1.5 font-medium">
+                    <XCircle className="w-4 h-4 text-[#8B3A2B]" /> Suspended / Blocked
                   </p>
                   <p className="text-[10px] text-[#1A1A1A]/50 mt-0.5">
-                    Blocked from authentication & checkout
+                    Blocked from authentication
                   </p>
                 </button>
               </div>
             </div>
 
-            <div className="pt-4 flex justify-end gap-2">
+            <div className="pt-4 flex justify-end gap-2 border-t border-[#1A1A1A]/10">
               <Button
                 type="button"
                 variant="outline"
@@ -800,10 +990,10 @@ export default function AdminCustomersAndUsersPage() {
       >
         {deletingUser && (
           <div className="space-y-4 text-xs">
-            <div className="flex items-start gap-3 p-3 bg-[#8B3A2B]/10 rounded-2xl border border-[#8B3A2B]/20 text-[#8B3A2B]">
+            <div className="flex items-start gap-3 p-3.5 bg-[#8B3A2B]/10 rounded-2xl border border-[#8B3A2B]/20 text-[#8B3A2B]">
               <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
               <div>
-                <p className="font-semibold">Are you sure you want to delete this customer?</p>
+                <p className="font-semibold text-sm">Delete {deletingUser.name}?</p>
                 <p className="text-[11px] text-[#8B3A2B]/80 mt-1">
                   This will permanently delete the customer record for <strong>{deletingUser.name}</strong> ({deletingUser.email}). This action cannot be undone.
                 </p>

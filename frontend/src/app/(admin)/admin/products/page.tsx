@@ -1,12 +1,22 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Plus, 
   Search, 
   Edit3, 
   Trash2,
   AlertTriangle,
+  RotateCcw,
+  CheckCircle2,
+  Package,
+  Boxes,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  X,
+  ArrowUpDown,
+  Eye,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -16,7 +26,10 @@ import { useToast } from '@/context/ToastContext';
 import { Product, ProductCategory } from '@/types';
 
 const CATEGORIES: ProductCategory[] = ['Skincare', 'Haircare', 'Body Care', 'Sun Care', 'Gift Sets'];
-type StockFilter = 'All' | 'In Stock' | 'Out of Stock';
+type StockFilter = 'All' | 'In Stock' | 'Low Stock' | 'Out of Stock';
+type SortOption = 'newest' | 'price-asc' | 'price-desc' | 'name-asc' | 'stock-desc' | 'stock-asc';
+
+const ITEMS_PER_PAGE = 10;
 
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -24,10 +37,17 @@ export default function AdminProductsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [stockFilter, setStockFilter] = useState<StockFilter>('All');
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [sortBy, setSortBy] = useState<SortOption>('newest');
+  const [currentPage, setCurrentPage] = useState(1);
 
-  // Form states matching product.model.js
+  // Modal states
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [inspectProduct, setInspectProduct] = useState<Product | null>(null);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Form states matching product schema
   const [name, setName] = useState('');
   const [category, setCategory] = useState<ProductCategory>('Skincare');
   const [subcategory, setSubcategory] = useState('General');
@@ -50,6 +70,7 @@ export default function AdminProductsPage() {
       setProducts(data);
     } catch (err) {
       console.error(err);
+      showToast({ type: 'error', title: 'Could not load products' });
     } finally {
       setIsLoading(false);
     }
@@ -59,21 +80,10 @@ export default function AdminProductsPage() {
     loadProducts();
   }, []);
 
-  const handleUpdateStock = async (product: Product, newStock: number) => {
-    try {
-      await productService.updateProduct(product.id, {
-        stock: Math.max(0, newStock),
-      });
-      showToast({
-        type: 'success',
-        title: 'Inventory Updated',
-        message: `${product.name} stock updated to ${Math.max(0, newStock)} units`,
-      });
-      loadProducts();
-    } catch {
-      showToast({ type: 'error', title: 'Could not update stock count' });
-    }
-  };
+  // Reset page to 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedCategory, stockFilter, sortBy]);
 
   const handleOpenAddModal = () => {
     setEditingProduct(null);
@@ -109,16 +119,24 @@ export default function AdminProductsPage() {
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (confirm('Are you sure you want to remove this product formulation from the catalog?')) {
-      await productService.deleteProduct(id);
-      showToast({ type: 'info', title: 'Product Deleted' });
+  const handleDeleteProduct = async () => {
+    if (!deletingProduct) return;
+    setIsSubmitting(true);
+    try {
+      await productService.deleteProduct(deletingProduct.id);
+      showToast({ type: 'info', title: 'Product Deleted', message: `${deletingProduct.name} removed from catalog.` });
+      setDeletingProduct(null);
       loadProducts();
+    } catch {
+      showToast({ type: 'error', title: 'Failed to delete product' });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
     try {
       const parsedIngredients = ingredientsText
         .split(',')
@@ -165,199 +183,543 @@ export default function AdminProductsPage() {
           reviews: [],
           stock: Math.max(0, Number(stock)),
         });
-        showToast({ type: 'success', title: 'New Product Created' });
+        showToast({ type: 'success', title: 'New Formulation Created' });
       }
       setIsModalOpen(false);
       loadProducts();
     } catch {
-      showToast({ type: 'error', title: 'Error saving product' });
+      showToast({ type: 'error', title: 'Error saving product formulation' });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const outOfStockCount = products.filter(p => (p.stock ?? 0) === 0).length;
+  const handleResetFilters = () => {
+    setSearchQuery('');
+    setSelectedCategory('All');
+    setStockFilter('All');
+    setSortBy('newest');
+    setCurrentPage(1);
+  };
 
-  const filtered = products.filter((p) => {
-    const matchesSearch =
-      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (p.subcategory && p.subcategory.toLowerCase().includes(searchQuery.toLowerCase()));
-    const matchesCat = selectedCategory === 'All' || p.category === selectedCategory;
-    const matchesStock =
-      stockFilter === 'All' ||
-      (stockFilter === 'In Stock' ? (p.stock ?? 0) > 0 : (p.stock ?? 0) === 0);
+  // Metrics Calculations
+  const metrics = useMemo(() => {
+    const total = products.length;
+    const inStock = products.filter((p) => (p.stock ?? 0) > 0).length;
+    const outOfStock = products.filter((p) => (p.stock ?? 0) === 0).length;
+    const lowStock = products.filter((p) => (p.stock ?? 0) > 0 && (p.stock ?? 0) <= 5).length;
+    const totalInventoryValue = products.reduce((acc, p) => acc + (p.price * (p.stock ?? 0)), 0);
 
-    return matchesSearch && matchesCat && matchesStock;
-  });
+    return { total, inStock, outOfStock, lowStock, totalInventoryValue };
+  }, [products]);
+
+  // Filtered and Sorted Products
+  const filteredProducts = useMemo(() => {
+    return products
+      .filter((p) => {
+        const query = searchQuery.toLowerCase().trim();
+        const matchesSearch =
+          !query ||
+          p.name.toLowerCase().includes(query) ||
+          p.id.toLowerCase().includes(query) ||
+          (p.subcategory && p.subcategory.toLowerCase().includes(query)) ||
+          p.category.toLowerCase().includes(query);
+
+        const matchesCat = selectedCategory === 'All' || p.category === selectedCategory;
+
+        const currentStock = p.stock ?? 0;
+        let matchesStock = true;
+        if (stockFilter === 'In Stock') matchesStock = currentStock > 0;
+        else if (stockFilter === 'Low Stock') matchesStock = currentStock > 0 && currentStock <= 5;
+        else if (stockFilter === 'Out of Stock') matchesStock = currentStock === 0;
+
+        return matchesSearch && matchesCat && matchesStock;
+      })
+      .sort((a, b) => {
+        if (sortBy === 'price-asc') return a.price - b.price;
+        if (sortBy === 'price-desc') return b.price - a.price;
+        if (sortBy === 'name-asc') return a.name.localeCompare(b.name);
+        if (sortBy === 'stock-desc') return (b.stock ?? 0) - (a.stock ?? 0);
+        if (sortBy === 'stock-asc') return (a.stock ?? 0) - (b.stock ?? 0);
+        return 0; // Default order
+      });
+  }, [products, searchQuery, selectedCategory, stockFilter, sortBy]);
+
+  // Pagination calculation
+  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / ITEMS_PER_PAGE));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const startIndex = (safeCurrentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, filteredProducts.length);
+  const paginatedProducts = filteredProducts.slice(startIndex, endIndex);
+
+  const hasActiveFilters = searchQuery !== '' || selectedCategory !== 'All' || stockFilter !== 'All' || sortBy !== 'newest';
 
   return (
     <div className="space-y-8 max-w-7xl">
-      {/* Top Header & Metrics */}
+      {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <span className="text-[10px] uppercase tracking-[0.25em] font-medium text-[#C87D55] block mb-1">
+          <span className="text-[10px] uppercase tracking-[0.25em] font-semibold text-[#C87D55] block mb-1">
             Cleanroom Catalog & Inventory
           </span>
           <h1 className="font-serif text-3xl text-[#1A1A1A]">Products & Stock Management</h1>
+          <p className="text-xs text-[#1A1A1A]/60 mt-1">
+            Maintain formulation catalog, oversee batch stocks, and configure pricing tiers.
+          </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          {outOfStockCount > 0 && (
-            <button
-              onClick={() => setStockFilter('Out of Stock')}
-              className="px-4 py-2 rounded-2xl bg-[#C87D55]/15 border border-[#C87D55]/30 flex items-center gap-2 text-xs font-semibold text-[#C87D55] hover:bg-[#C87D55]/25 transition-colors cursor-pointer"
-            >
-              <AlertTriangle className="w-4 h-4" />
-              <span>{outOfStockCount} Out of Stock Alerts</span>
-            </button>
-          )}
+        <div className="flex items-center gap-2.5">
+          <Button
+            variant="outline"
+            size="sm"
+            icon={RotateCcw}
+            onClick={loadProducts}
+            disabled={isLoading}
+          >
+            {isLoading ? 'Syncing...' : 'Refresh'}
+          </Button>
 
-          <Button variant="primary" size="md" icon={Plus} onClick={handleOpenAddModal}>
+          <Button variant="primary" size="sm" icon={Plus} onClick={handleOpenAddModal}>
             Add Formulation
           </Button>
         </div>
       </div>
 
-      {/* Filter and Search Bar */}
-      <div className="bg-white border border-[#1A1A1A]/10 rounded-3xl p-4 sm:p-6 shadow-xs space-y-4">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="relative flex-1 w-full sm:w-auto">
+      {/* KPI Stats Bar */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Total Formulations */}
+        <div className="bg-white border border-[#1A1A1A]/10 rounded-2xl p-4 shadow-xs flex items-center justify-between hover:border-[#1A1A1A]/20 transition-all">
+          <div>
+            <span className="text-[10px] uppercase tracking-wider text-[#1A1A1A]/50 font-semibold block">
+              Total Formulations
+            </span>
+            <span className="font-serif text-2xl font-bold text-[#1A1A1A] mt-0.5 block">
+              {metrics.total}
+            </span>
+            <span className="text-[10px] text-[#1A1A1A]/60 mt-0.5 block">
+              Across {CATEGORIES.length} categories
+            </span>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-[#FAF8F5] border border-[#1A1A1A]/10 flex items-center justify-center text-[#1A1A1A]">
+            <Package className="w-5 h-5" />
+          </div>
+        </div>
+
+        {/* In Stock */}
+        <div className="bg-white border border-[#1A1A1A]/10 rounded-2xl p-4 shadow-xs flex items-center justify-between hover:border-[#1A1A1A]/20 transition-all">
+          <div>
+            <span className="text-[10px] uppercase tracking-wider text-[#5B7065] font-semibold block">
+              Available in Stock
+            </span>
+            <span className="font-serif text-2xl font-bold text-[#1A1A1A] mt-0.5 block">
+              {metrics.inStock}
+            </span>
+            <span className="text-[10px] text-[#5B7065] mt-0.5 block">
+              {metrics.total > 0 ? Math.round((metrics.inStock / metrics.total) * 100) : 0}% fulfillment ready
+            </span>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-[#5B7065]/10 border border-[#5B7065]/20 flex items-center justify-center text-[#5B7065]">
+            <CheckCircle2 className="w-5 h-5" />
+          </div>
+        </div>
+
+        {/* Low / Out of Stock */}
+        <div className="bg-white border border-[#1A1A1A]/10 rounded-2xl p-4 shadow-xs flex items-center justify-between hover:border-[#1A1A1A]/20 transition-all">
+          <div>
+            <span className="text-[10px] uppercase tracking-wider text-[#C87D55] font-semibold block">
+              Stock Alerts
+            </span>
+            <span className="font-serif text-2xl font-bold text-[#1A1A1A] mt-0.5 block">
+              {metrics.outOfStock + metrics.lowStock}
+            </span>
+            <span className="text-[10px] text-[#C87D55] mt-0.5 block">
+              {metrics.outOfStock} out of stock • {metrics.lowStock} low
+            </span>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-[#C87D55]/10 border border-[#C87D55]/20 flex items-center justify-center text-[#C87D55]">
+            <AlertTriangle className="w-5 h-5" />
+          </div>
+        </div>
+
+        {/* Valuation */}
+        <div className="bg-white border border-[#1A1A1A]/10 rounded-2xl p-4 shadow-xs flex items-center justify-between hover:border-[#1A1A1A]/20 transition-all">
+          <div>
+            <span className="text-[10px] uppercase tracking-wider text-[#1A1A1A]/50 font-semibold block">
+              Inventory Value
+            </span>
+            <span className="font-serif text-2xl font-bold text-[#1A1A1A] mt-0.5 block">
+              LKR {(metrics.totalInventoryValue / 1000).toFixed(0)}k
+            </span>
+            <span className="text-[10px] text-[#1A1A1A]/60 mt-0.5 block">
+              Live valuation at retail
+            </span>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-[#EAE3D9] border border-[#1A1A1A]/10 flex items-center justify-center text-[#1A1A1A]">
+            <Boxes className="w-5 h-5" />
+          </div>
+        </div>
+      </div>
+
+      {/* Filter and Search Bar with Dropdowns */}
+      <div className="bg-white border border-[#1A1A1A]/10 rounded-3xl p-4 sm:p-5 shadow-xs space-y-3">
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+          {/* Search Box */}
+          <div className="relative flex-1">
             <Search className="w-4 h-4 text-[#1A1A1A]/40 absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search formulations by name, ID, or subcategory..."
-              className="w-full pl-10 pr-4 py-2 bg-[#FAF8F5] border border-[#1A1A1A]/10 rounded-full text-xs text-[#1A1A1A] outline-none focus:border-[#C87D55]"
+              className="w-full pl-10 pr-9 py-2.5 bg-[#FAF8F5] border border-[#1A1A1A]/10 rounded-full text-xs text-[#1A1A1A] outline-none focus:border-[#C87D55] transition-all placeholder:text-[#1A1A1A]/40"
             />
-          </div>
-
-          {/* Stock state pills: In Stock (Stock > 0), Out of Stock (Stock = 0) */}
-          <div className="flex items-center gap-1.5 w-full sm:w-auto overflow-x-auto">
-            {(['All', 'In Stock', 'Out of Stock'] as StockFilter[]).map((st) => (
+            {searchQuery && (
               <button
-                key={st}
-                onClick={() => setStockFilter(st)}
-                className={`px-3 py-1.5 rounded-full text-xs uppercase tracking-wider whitespace-nowrap transition-colors cursor-pointer ${
-                  stockFilter === st
-                    ? 'bg-[#1A1A1A] text-[#FAF8F5] font-semibold'
-                    : 'bg-[#FAF8F5] text-[#1A1A1A]/70 hover:text-[#1A1A1A]'
-                }`}
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#1A1A1A]/40 hover:text-[#1A1A1A] p-0.5 cursor-pointer"
               >
-                {st === 'In Stock' ? 'In Stock' : st === 'Out of Stock' ? 'Out of Stock ' : 'All Stock'}
+                <X className="w-3.5 h-3.5" />
               </button>
-            ))}
+            )}
           </div>
-        </div>
 
-        {/* Category Filter Pills */}
-        <div className="flex items-center gap-2 overflow-x-auto pt-2 border-t border-[#1A1A1A]/5">
-          {['All', ...CATEGORIES].map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setSelectedCategory(cat)}
-              className={`px-3.5 py-1 rounded-full text-xs uppercase tracking-wider whitespace-nowrap transition-colors cursor-pointer ${
-                selectedCategory === cat
-                  ? 'bg-[#C87D55] text-white font-semibold'
-                  : 'bg-[#FAF8F5] text-[#1A1A1A]/70 hover:text-[#1A1A1A]'
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
+          {/* Dropdown Filters Group */}
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5">
+            {/* Category Dropdown */}
+            <div className="relative flex-1 sm:flex-initial min-w-[150px]">
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="w-full appearance-none pl-3.5 pr-8 py-2.5 bg-[#FAF8F5] border border-[#1A1A1A]/10 hover:border-[#1A1A1A]/30 rounded-full text-xs font-medium text-[#1A1A1A] outline-none focus:border-[#C87D55] transition-colors cursor-pointer"
+              >
+                <option value="All">Category: All</option>
+                {CATEGORIES.map((c) => (
+                  <option key={c} value={c}>Category: {c}</option>
+                ))}
+              </select>
+              <ChevronDown className="w-3.5 h-3.5 text-[#1A1A1A]/40 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
+
+            {/* Stock Status Dropdown */}
+            <div className="relative flex-1 sm:flex-initial min-w-[150px]">
+              <select
+                value={stockFilter}
+                onChange={(e) => setStockFilter(e.target.value as StockFilter)}
+                className="w-full appearance-none pl-3.5 pr-8 py-2.5 bg-[#FAF8F5] border border-[#1A1A1A]/10 hover:border-[#1A1A1A]/30 rounded-full text-xs font-medium text-[#1A1A1A] outline-none focus:border-[#C87D55] transition-colors cursor-pointer"
+              >
+                <option value="All">Stock: All Levels</option>
+                <option value="In Stock">Stock: Available In Stock</option>
+                <option value="Low Stock">Stock: Low (≤ 5 units)</option>
+                <option value="Out of Stock">Stock: Out of Stock (0)</option>
+              </select>
+              <ChevronDown className="w-3.5 h-3.5 text-[#1A1A1A]/40 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
+
+            {/* Sort Dropdown */}
+            <div className="relative flex-1 sm:flex-initial min-w-[160px]">
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as SortOption)}
+                className="w-full appearance-none pl-3.5 pr-8 py-2.5 bg-[#FAF8F5] border border-[#1A1A1A]/10 hover:border-[#1A1A1A]/30 rounded-full text-xs font-medium text-[#1A1A1A] outline-none focus:border-[#C87D55] transition-colors cursor-pointer"
+              >
+                <option value="newest">Sort: Catalog Default</option>
+                <option value="price-asc">Price: Low to High</option>
+                <option value="price-desc">Price: High to Low</option>
+                <option value="name-asc">Name: A to Z</option>
+                <option value="stock-desc">Stock: High to Low</option>
+                <option value="stock-asc">Stock: Low to High</option>
+              </select>
+              <ArrowUpDown className="w-3.5 h-3.5 text-[#1A1A1A]/40 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
+
+            {/* Reset Filters button */}
+            {hasActiveFilters && (
+              <button
+                onClick={handleResetFilters}
+                className="px-3 py-2 rounded-full border border-[#1A1A1A]/10 text-xs text-[#1A1A1A]/60 hover:text-[#C87D55] hover:border-[#C87D55]/30 bg-[#FAF8F5] transition-colors cursor-pointer whitespace-nowrap inline-flex items-center gap-1"
+                title="Reset all filters"
+              >
+                <RotateCcw className="w-3 h-3" />
+                <span>Reset</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Unified Product Table */}
+      {/* Unified Table View */}
       <div className="bg-white border border-[#1A1A1A]/10 rounded-3xl overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
               <tr className="border-b border-[#1A1A1A]/10 bg-[#FAF8F5]/80 text-[#1A1A1A]/60 uppercase tracking-widest font-semibold">
-                <th className="py-4 px-6">Product</th>
-                <th className="py-4 px-6">Category & Subcategory</th>
-                <th className="py-4 px-6">Price</th>
-                <th className="py-4 px-6">Rating / Reviews</th>
-                <th className="py-4 px-6">Current Stock</th>
+                <th className="py-4 px-6">Product Formulation</th>
+                <th className="py-4 px-6">Category & Type</th>
+                <th className="py-4 px-6">Retail Price</th>
+                <th className="py-4 px-6">Feedback / Rating</th>
+                <th className="py-4 px-6">Inventory Status</th>
                 <th className="py-4 px-6 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#1A1A1A]/10">
-              {filtered.map((prod) => (
-                <tr key={prod.id} className="hover:bg-[#FAF8F5]/50 transition-colors">
-                  <td className="py-4 px-6">
-                    <div className="flex items-center gap-3">
-                      <img
-                        src={prod.image || 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=800&q=80'}
-                        alt={prod.name}
-                        className="w-12 h-14 rounded-xl object-cover bg-[#EAE3D9]/40 border border-[#1A1A1A]/5 shrink-0"
-                      />
-                      <div>
-                        <span className="font-serif text-sm font-medium text-[#1A1A1A] block">
-                          {prod.name}
-                        </span>
-                        <span className="text-[10px] text-[#1A1A1A]/50">ID: {prod.id} • {prod.size}</span>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="py-4 px-6 font-medium text-[#1A1A1A]/80">
-                    <div>
-                      <span>{prod.category}</span>
-                      <span className="block text-[10px] text-[#1A1A1A]/50">{prod.subcategory || 'General'}</span>
-                    </div>
-                  </td>
-                  <td className="py-4 px-6 font-semibold text-[#1A1A1A]">
-                    LKR {prod.price.toLocaleString()}
-                  </td>
-                  <td className="py-4 px-6 text-[#1A1A1A]/70">
-                    {prod.rating !== null && prod.rating !== undefined
-                      ? `★ ${Number(prod.rating).toFixed(1)} (${prod.reviewCount || 0} reviews)`
-                      : '★ New (0 reviews)'}
-                  </td>
-                  <td className="py-4 px-6">
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-1 rounded-xl text-xs font-semibold ${
-                          (prod.stock ?? 0) > 10
-                            ? 'bg-[#8A9A86]/15 text-[#6B7B67] border border-[#8A9A86]/30'
-                            : (prod.stock ?? 0) > 0
-                            ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                            : 'bg-red-50 text-red-600 border border-red-200'
-                        }`}
-                      >
-                        {(prod.stock ?? 0) > 0 ? `${prod.stock} in stock` : '0 (Out of stock)'}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="py-4 px-6 text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <button
-                        onClick={() => handleOpenEditModal(prod)}
-                        className="p-1.5 rounded-lg border border-[#1A1A1A]/10 text-[#1A1A1A]/70 hover:text-[#1A1A1A] hover:bg-[#FAF8F5] transition-colors cursor-pointer"
-                        title="Edit Formulation & Stock"
-                      >
-                        <Edit3 className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(prod.id)}
-                        className="p-1.5 rounded-lg border border-[#1A1A1A]/10 text-red-500 hover:text-red-700 hover:bg-red-50 transition-colors cursor-pointer"
-                        title="Delete Product"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+              {isLoading ? (
+                <tr>
+                  <td colSpan={6} className="py-12 text-center text-[#1A1A1A]/50">
+                    <div className="flex items-center justify-center gap-2">
+                      <div className="w-4 h-4 rounded-full border-2 border-[#C87D55] border-t-transparent animate-spin" />
+                      <span>Loading formulations from catalog...</span>
                     </div>
                   </td>
                 </tr>
-              ))}
+              ) : paginatedProducts.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-16 text-center">
+                    <div className="max-w-md mx-auto space-y-3">
+                      <Package className="w-10 h-10 text-[#1A1A1A]/20 mx-auto" />
+                      <h3 className="font-serif text-lg text-[#1A1A1A]">No Formulations Found</h3>
+                      <p className="text-xs text-[#1A1A1A]/60">
+                        {hasActiveFilters
+                          ? 'No products match the selected criteria or search query. Try clearing your filters.'
+                          : 'There are currently no products registered in your catalog.'}
+                      </p>
+                      {hasActiveFilters && (
+                        <Button variant="outline" size="sm" onClick={handleResetFilters}>
+                          Clear Filters
+                        </Button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                paginatedProducts.map((prod) => {
+                  const stockCount = prod.stock ?? 0;
+                  const isOutOfStock = stockCount === 0;
+                  const isLowStock = stockCount > 0 && stockCount <= 5;
+
+                  return (
+                    <tr key={prod.id} className="hover:bg-[#FAF8F5]/50 transition-colors">
+                      {/* Product Formulation & ID */}
+                      <td className="py-4 px-6">
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={prod.image || 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=800&q=80'}
+                            alt={prod.name}
+                            className="w-12 h-14 rounded-xl object-cover bg-[#EAE3D9]/40 border border-[#1A1A1A]/5 shrink-0"
+                          />
+                          <div>
+                            <span className="font-serif text-sm font-medium text-[#1A1A1A] block">
+                              {prod.name}
+                            </span>
+                            <span className="text-[10px] text-[#1A1A1A]/50 font-mono">
+                              {prod.id} • {prod.size}
+                            </span>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Category & Subcategory */}
+                      <td className="py-4 px-6 font-medium text-[#1A1A1A]/80">
+                        <div>
+                          <span className="font-medium text-[#1A1A1A]">{prod.category}</span>
+                          <span className="block text-[10px] text-[#1A1A1A]/50">
+                            {prod.subcategory || 'General Care'}
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* Retail Price */}
+                      <td className="py-4 px-6 font-semibold text-[#1A1A1A]">
+                        LKR {prod.price.toLocaleString()}
+                      </td>
+
+                      {/* Rating / Reviews */}
+                      <td className="py-4 px-6 text-[#1A1A1A]/70">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[#C87D55] font-semibold">★ {Number(prod.rating || 5).toFixed(1)}</span>
+                          <span className="text-[10px] text-[#1A1A1A]/40">({prod.reviewCount || 0})</span>
+                        </div>
+                      </td>
+
+                      {/* Stock Level & Badge */}
+                      <td className="py-4 px-6">
+                        <span
+                          className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-medium ${
+                            isOutOfStock
+                              ? 'bg-[#8B3A2B]/10 text-[#8B3A2B] border border-[#8B3A2B]/20'
+                              : isLowStock
+                              ? 'bg-[#C87D55]/10 text-[#C87D55] border border-[#C87D55]/20'
+                              : 'bg-[#5B7065]/10 text-[#5B7065] border border-[#5B7065]/20'
+                          }`}
+                        >
+                          {isOutOfStock ? (
+                            '0 in stock (Out of Stock)'
+                          ) : isLowStock ? (
+                            `${stockCount} remaining (Low)`
+                          ) : (
+                            `${stockCount} units available`
+                          )}
+                        </span>
+                      </td>
+
+                      {/* Action Controls */}
+                      <td className="py-4 px-6 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          {/* Inspect */}
+                          <button
+                            onClick={() => setInspectProduct(prod)}
+                            className="p-2 rounded-xl border border-[#1A1A1A]/10 hover:border-[#1A1A1A] text-[#1A1A1A] hover:bg-[#FAF8F5] transition-colors cursor-pointer"
+                            title="Inspect formulation details"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                          </button>
+
+                          {/* Edit */}
+                          <button
+                            onClick={() => handleOpenEditModal(prod)}
+                            className="p-2 rounded-xl border border-[#1A1A1A]/10 hover:border-[#C87D55] text-[#C87D55] hover:bg-[#C87D55]/10 transition-colors cursor-pointer"
+                            title="Edit Formulation & Inventory"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+
+                          {/* Delete */}
+                          <button
+                            onClick={() => setDeletingProduct(prod)}
+                            className="p-2 rounded-xl border border-[#1A1A1A]/10 hover:border-[#8B3A2B] text-[#1A1A1A]/50 hover:text-[#8B3A2B] hover:bg-[#8B3A2B]/5 transition-colors cursor-pointer"
+                            title="Delete Formulation"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>
+
+        {/* Table Footer with Pagination */}
+        <div className="p-4 sm:px-6 bg-[#FAF8F5]/60 border-t border-[#1A1A1A]/10 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[#1A1A1A]/60">
+          <div>
+            <span>
+              Showing <strong className="text-[#1A1A1A]">{filteredProducts.length === 0 ? 0 : startIndex + 1}–{endIndex}</strong> of <strong className="text-[#1A1A1A]">{filteredProducts.length}</strong> formulations
+              {filteredProducts.length !== products.length && ` (filtered from ${products.length})`}
+            </span>
+          </div>
+
+          {/* Previous / Next Pagination Controls */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={safeCurrentPage <= 1}
+              className="px-3 py-1.5 rounded-full border border-[#1A1A1A]/10 hover:border-[#1A1A1A] bg-white text-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-all flex items-center gap-1 font-medium cursor-pointer"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+              <span>Previous</span>
+            </button>
+
+            <span className="px-3 py-1 bg-[#FAF8F5] border border-[#1A1A1A]/10 rounded-full font-medium text-[11px] text-[#1A1A1A]">
+              Page {safeCurrentPage} of {totalPages}
+            </span>
+
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={safeCurrentPage >= totalPages || filteredProducts.length === 0}
+              className="px-3 py-1.5 rounded-full border border-[#1A1A1A]/10 hover:border-[#1A1A1A] bg-white text-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-all flex items-center gap-1 font-medium cursor-pointer"
+            >
+              <span>Next</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
       </div>
+
+      {/* Inspect Product Modal */}
+      <Modal
+        isOpen={!!inspectProduct}
+        onClose={() => setInspectProduct(null)}
+        title={inspectProduct?.name || 'Product Details'}
+        subtitle={`ID: ${inspectProduct?.id} • Category: ${inspectProduct?.category}`}
+        maxWidth="md"
+      >
+        {inspectProduct && (
+          <div className="space-y-6 text-xs">
+            <div className="flex items-center gap-4 bg-[#FAF8F5] p-4 rounded-2xl border border-[#1A1A1A]/10">
+              <img
+                src={inspectProduct.image || 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=800&q=80'}
+                alt={inspectProduct.name}
+                className="w-16 h-20 rounded-xl object-cover bg-[#EAE3D9]/40 border border-[#1A1A1A]/10 shrink-0"
+              />
+              <div className="space-y-1">
+                <h3 className="font-serif text-lg font-medium text-[#1A1A1A]">{inspectProduct.name}</h3>
+                <p className="text-sm font-semibold text-[#1A1A1A]">LKR {inspectProduct.price.toLocaleString()}</p>
+                <p className="text-[11px] text-[#1A1A1A]/60">{inspectProduct.size} • {inspectProduct.subcategory || 'General'}</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-3.5 rounded-2xl border border-[#1A1A1A]/10 bg-white">
+                <span className="text-[10px] uppercase tracking-wider text-[#1A1A1A]/50 block mb-1">Current Stock</span>
+                <span className="font-serif text-base font-semibold text-[#1A1A1A]">
+                  {inspectProduct.stock ?? 0} units
+                </span>
+              </div>
+              <div className="p-3.5 rounded-2xl border border-[#1A1A1A]/10 bg-white">
+                <span className="text-[10px] uppercase tracking-wider text-[#1A1A1A]/50 block mb-1">Customer Rating</span>
+                <span className="font-serif text-base font-semibold text-[#1A1A1A]">
+                  ★ {Number(inspectProduct.rating || 5).toFixed(1)} ({inspectProduct.reviewCount || 0} reviews)
+                </span>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <h4 className="font-semibold uppercase tracking-wider text-[10px] text-[#1A1A1A]/60">Description</h4>
+              <p className="text-[#1A1A1A]/80 leading-relaxed bg-[#FAF8F5] p-3 rounded-xl border border-[#1A1A1A]/5">
+                {inspectProduct.description}
+              </p>
+            </div>
+
+            {inspectProduct.ingredients && inspectProduct.ingredients.length > 0 && (
+              <div className="space-y-1.5">
+                <h4 className="font-semibold uppercase tracking-wider text-[10px] text-[#1A1A1A]/60">Key Botanical Actives</h4>
+                <div className="flex flex-wrap gap-1.5">
+                  {inspectProduct.ingredients.map((ing, idx) => (
+                    <span key={idx} className="px-2.5 py-1 rounded-full bg-[#FAF8F5] border border-[#1A1A1A]/10 text-[10px] text-[#1A1A1A]/70">
+                      {ing}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="pt-3 flex justify-end gap-2 border-t border-[#1A1A1A]/10">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const p = inspectProduct;
+                  setInspectProduct(null);
+                  handleOpenEditModal(p);
+                }}
+              >
+                Edit Formulation
+              </Button>
+              <Button variant="primary" size="sm" onClick={() => setInspectProduct(null)}>
+                Close
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
 
       {/* Add / Edit Formulation Modal */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title={editingProduct ? 'Edit Formulation & Stock' : 'Create New Formulation'}
+        subtitle={editingProduct ? `Modifying formulation: ${editingProduct.name}` : 'Register a new botanical formulation in the catalog'}
         maxWidth="lg"
       >
         <form onSubmit={handleSaveProduct} className="space-y-4 text-xs">
@@ -371,18 +733,21 @@ export default function AdminProductsPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="text-[10px] uppercase tracking-wider font-semibold text-[#1A1A1A]/60 block mb-1">
+              <label className="text-xs font-medium uppercase tracking-[0.12em] text-[#1A1A1A]/70 block mb-1.5">
                 Category *
               </label>
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value as ProductCategory)}
-                className="w-full p-2.5 rounded-xl bg-[#FAF8F5] border border-[#1A1A1A]/10 text-xs text-[#1A1A1A] outline-none focus:border-[#C87D55]"
-              >
-                {CATEGORIES.map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
+              <div className="relative">
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value as ProductCategory)}
+                  className="w-full appearance-none bg-white text-[#1A1A1A] border border-[#1A1A1A]/15 rounded-xl px-4 py-3.5 text-sm outline-none focus:border-[#1A1A1A] cursor-pointer"
+                >
+                  {CATEGORIES.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+                <ChevronDown className="w-4 h-4 text-[#1A1A1A]/40 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
             </div>
 
             <Input
@@ -404,7 +769,7 @@ export default function AdminProductsPage() {
             />
 
             <Input
-              label="Unit Volume / Size"
+              label="Unit Volume / Size *"
               required
               value={size}
               onChange={(e) => setSize(e.target.value)}
@@ -412,7 +777,7 @@ export default function AdminProductsPage() {
             />
 
             <Input
-              label="Current Stock (Quantity) *"
+              label="Current Stock *"
               type="number"
               required
               min={0}
@@ -423,36 +788,36 @@ export default function AdminProductsPage() {
           </div>
 
           <Input
-            label="Image URL"
+            label="Product Image URL"
             value={imageUrl}
             onChange={(e) => setImageUrl(e.target.value)}
             placeholder="https://images.unsplash.com/..."
           />
 
-          <div className="space-y-1">
-            <label className="text-[10px] uppercase tracking-wider font-semibold text-[#1A1A1A]/60 block">
-              Short Description *
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium uppercase tracking-[0.12em] text-[#1A1A1A]/70 block">
+              Short Summary Description *
             </label>
             <textarea
               required
               rows={2}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Short summary of the product formulation..."
-              className="w-full p-3 rounded-2xl bg-[#FAF8F5] border border-[#1A1A1A]/10 text-xs text-[#1A1A1A] outline-none focus:border-[#C87D55]"
+              placeholder="Short summary of formulation benefits..."
+              className="w-full bg-white text-[#1A1A1A] border border-[#1A1A1A]/15 rounded-xl p-3.5 text-sm outline-none focus:border-[#1A1A1A] placeholder:text-[#1A1A1A]/35"
             />
           </div>
 
-          <div className="space-y-1">
-            <label className="text-[10px] uppercase tracking-wider font-semibold text-[#1A1A1A]/60 block">
-              Long Formulation & Science Description
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium uppercase tracking-[0.12em] text-[#1A1A1A]/70 block">
+              Long Formulation Science Description
             </label>
             <textarea
               rows={3}
               value={longDescription}
               onChange={(e) => setLongDescription(e.target.value)}
-              placeholder="In-depth clinical formulation details, molecular weights, and mechanisms..."
-              className="w-full p-3 rounded-2xl bg-[#FAF8F5] border border-[#1A1A1A]/10 text-xs text-[#1A1A1A] outline-none focus:border-[#C87D55]"
+              placeholder="In-depth scientific rationale and molecular mechanism..."
+              className="w-full bg-white text-[#1A1A1A] border border-[#1A1A1A]/15 rounded-xl p-3.5 text-sm outline-none focus:border-[#1A1A1A] placeholder:text-[#1A1A1A]/35"
             />
           </div>
 
@@ -461,7 +826,7 @@ export default function AdminProductsPage() {
               label="How To Use (The Ritual)"
               value={howToUse}
               onChange={(e) => setHowToUse(e.target.value)}
-              placeholder="e.g. Dispense 3-4 drops onto cleansed skin..."
+              placeholder="e.g. Dispense 2-3 drops into palms..."
             />
 
             <Input
@@ -472,8 +837,8 @@ export default function AdminProductsPage() {
             />
           </div>
 
-          <div className="space-y-1">
-            <label className="text-[10px] uppercase tracking-wider font-semibold text-[#1A1A1A]/60 block">
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium uppercase tracking-[0.12em] text-[#1A1A1A]/70 block">
               Ingredients List (Comma separated)
             </label>
             <textarea
@@ -481,19 +846,74 @@ export default function AdminProductsPage() {
               value={ingredientsText}
               onChange={(e) => setIngredientsText(e.target.value)}
               placeholder="Aqua, Niacinamide, Sodium Hyaluronate, Camellia Sinensis..."
-              className="w-full p-3 rounded-2xl bg-[#FAF8F5] border border-[#1A1A1A]/10 text-xs text-[#1A1A1A] outline-none focus:border-[#C87D55]"
+              className="w-full bg-white text-[#1A1A1A] border border-[#1A1A1A]/15 rounded-xl p-3.5 text-sm outline-none focus:border-[#1A1A1A] placeholder:text-[#1A1A1A]/35"
             />
           </div>
 
           <div className="pt-4 flex justify-end gap-2 border-t border-[#1A1A1A]/10">
-            <Button type="button" variant="outline" size="sm" onClick={() => setIsModalOpen(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setIsModalOpen(false)}
+              disabled={isSubmitting}
+            >
               Cancel
             </Button>
-            <Button type="submit" variant="primary" size="sm">
-              {editingProduct ? 'Save Changes' : 'Publish to Catalog'}
+            <Button
+              type="submit"
+              variant="primary"
+              size="sm"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? 'Saving...' : editingProduct ? 'Save Changes' : 'Publish to Catalog'}
             </Button>
           </div>
         </form>
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={!!deletingProduct}
+        onClose={() => setDeletingProduct(null)}
+        title="Remove Formulation from Catalog"
+        maxWidth="sm"
+      >
+        {deletingProduct && (
+          <div className="space-y-4 text-xs">
+            <div className="flex items-start gap-3 p-3.5 bg-[#8B3A2B]/10 rounded-2xl border border-[#8B3A2B]/20 text-[#8B3A2B]">
+              <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold text-sm">Delete {deletingProduct.name}?</p>
+                <p className="text-[11px] text-[#8B3A2B]/80 mt-1">
+                  This action will permanently delete this formulation ({deletingProduct.id}) from the active catalog and inventory tracking.
+                </p>
+              </div>
+            </div>
+
+            <div className="pt-2 flex justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setDeletingProduct(null)}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                variant="primary"
+                size="sm"
+                onClick={handleDeleteProduct}
+                disabled={isSubmitting}
+                className="bg-[#8B3A2B] hover:bg-[#722f23] text-white border-none"
+              >
+                {isSubmitting ? 'Deleting...' : 'Confirm Delete'}
+              </Button>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );
