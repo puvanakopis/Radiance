@@ -18,7 +18,7 @@ import { useToast } from '@/context/ToastContext';
 import { useAuth } from '@/context/AuthContext';
 
 export default function SettingsPage() {
-  const { user, logout, changePassword } = useAuth();
+  const { user, changePassword, deleteAccount } = useAuth();
   const { showToast } = useToast();
   const router = useRouter();
 
@@ -79,20 +79,9 @@ export default function SettingsPage() {
 
     setIsDeletingAccount(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      await logout();
-      showToast({
-        type: 'info',
-        title: 'Account Decommissioned',
-        message: 'Your patron account and credentials have been permanently deleted.',
-      });
+      await deleteAccount();
       router.push('/');
-    } catch (err) {
-      showToast({
-        type: 'error',
-        title: 'Deletion Failed',
-        message: 'Unable to delete account at this time.',
-      });
+    } catch {
       setIsDeletingAccount(false);
     }
   };

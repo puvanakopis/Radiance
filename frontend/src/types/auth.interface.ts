@@ -119,6 +119,7 @@ export interface AuthContextType {
   logout: () => Promise<void>;
   updateProfile: (updates: Partial<Customer>) => Promise<Customer>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<ApiResponse>;
+  deleteAccount: () => Promise<ApiResponse>;
   addAddress: (address: Omit<Address, 'id'>) => Promise<void>;
   setDefaultAddress: (addressId: string) => Promise<void>;
   deleteAddress: (addressId: string) => Promise<void>;

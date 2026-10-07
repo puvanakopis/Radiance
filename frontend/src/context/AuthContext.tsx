@@ -276,6 +276,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     [showToast]
   );
 
+  // --- Delete / Decommission Account ---
+  const deleteAccount = useCallback(async (): Promise<ApiResponse> => {
+    try {
+      const res = await authService.deleteAccount();
+      setUser(null);
+      showToast({
+        type: 'info',
+        title: 'Account Decommissioned',
+        message: 'Your patron account and credentials have been permanently deleted.',
+      });
+      return res;
+    } catch (err: any) {
+      const message = err.message || 'Unable to decommission account at this time.';
+      showToast({
+        type: 'error',
+        title: 'Deletion Failed',
+        message,
+      });
+      throw err;
+    }
+  }, [showToast]);
+
   // --- Address Management ---
   const addAddress = useCallback(
     async (newAddress: Omit<Address, 'id'>): Promise<void> => {
@@ -341,6 +363,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         logout,
         updateProfile,
         changePassword,
+        deleteAccount,
         addAddress,
         setDefaultAddress,
         deleteAddress,

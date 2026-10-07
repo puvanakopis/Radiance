@@ -581,3 +581,30 @@ export async function changePassword(req, res, next) {
     next(err);
   }
 }
+
+// Authenticated: Delete / Decommission current user's account
+export async function deleteAccount(req, res, next) {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'Unauthenticated' });
+      return;
+    }
+
+    const userId = req.user.userId || req.user.id || req.user._id;
+    const result = await findAccountById(userId, req.user.role);
+
+    if (!result || !result.model) {
+      throw new AppError('Account not found.', 404);
+    }
+
+    await result.model.findByIdAndDelete(userId);
+
+    res.status(200).json({
+      success: true,
+      message: 'Account decommissioned and deleted successfully.',
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+

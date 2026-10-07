@@ -30,5 +30,6 @@ router.post('/login', validateLogin, authController.login);
 router.get('/me', authenticateToken, authController.getMe);
 router.put('/profile', authenticateToken, validateUpdateProfile, authController.updateProfile);
 router.put('/change-password', authenticateToken, validateChangePassword, authController.changePassword);
+router.delete('/account', authenticateToken, authController.deleteAccount);
 
 export default router;

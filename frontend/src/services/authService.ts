@@ -287,6 +287,14 @@ class AuthService {
     });
   }
 
+  async deleteAccount(): Promise<ApiResponse> {
+    const res = await this.request('/auth/account', {
+      method: 'DELETE',
+    });
+    this.clearToken();
+    return res;
+  }
+
   async logout(): Promise<void> {
     this.clearToken();
   }
