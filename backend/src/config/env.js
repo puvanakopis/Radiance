@@ -26,7 +26,7 @@ export const ENV = {
   PAYHERE_NOTIFY_URL: process.env.PAYHERE_NOTIFY_URL || 'http://localhost:5000/api/payments/payhere/notify',
 
   // Business settings
-  WHATSAPP_BUSINESS_NUMBER: process.env.WHATSAPP_BUSINESS_NUMBER || '+94771234567',
+  WHATSAPP_BUSINESS_NUMBER: process.env.WHATSAPP_BUSINESS_NUMBER || '+94712621098',
   STORE_CURRENCY: process.env.STORE_CURRENCY || 'LKR',
   FREE_DELIVERY_THRESHOLD: parseFloat(process.env.FREE_DELIVERY_THRESHOLD || '7500'),
   DEFAULT_DELIVERY_FEE: parseFloat(process.env.DEFAULT_DELIVERY_FEE || '450'),

@@ -67,6 +67,24 @@ const CustomerSchema = new mongoose.Schema(
         ref: 'Product',
       },
     ],
+    cart: [
+      {
+        productId: {
+          type: String,
+          ref: 'Product',
+          required: true,
+        },
+        quantity: {
+          type: Number,
+          default: 1,
+          min: 1,
+        },
+        selectedSize: {
+          type: String,
+          default: '50ml',
+        },
+      },
+    ],
   },
   {
     timestamps: true,
