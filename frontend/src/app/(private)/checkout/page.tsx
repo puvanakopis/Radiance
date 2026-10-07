@@ -124,11 +124,11 @@ export default function CheckoutPage() {
           items: items.map(item => ({
             productId: item.product.id,
             productName: item.product.name,
-            productImage: item.product.images[0],
+            productImage: item.product.image,
             size: item.selectedSize,
             price: item.product.price,
             quantity: item.quantity,
-            sku: item.product.sku,
+            sku: item.product.id,
           })),
           subtotal,
           discount,
@@ -155,11 +155,11 @@ export default function CheckoutPage() {
           items: items.map(item => ({
             productId: item.product.id,
             productName: item.product.name,
-            productImage: item.product.images[0],
+            productImage: item.product.image,
             size: item.selectedSize,
             price: item.product.price,
             quantity: item.quantity,
-            sku: item.product.sku,
+            sku: item.product.id,
           })),
           subtotal,
           discount,
@@ -505,7 +505,7 @@ export default function CheckoutPage() {
               {items.map((item) => (
                 <div key={item.id} className="py-3 flex items-center gap-3">
                   <img
-                    src={item.product.images[0]}
+                    src={item.product.image}
                     alt={item.product.name}
                     className="w-12 h-14 object-cover rounded-xl bg-[#EAE3D9]/40 shrink-0"
                   />

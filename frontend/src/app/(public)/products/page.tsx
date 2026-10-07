@@ -13,7 +13,6 @@ import { Product, ProductCategory, SkinType, SkinConcern } from '@/types';
 
 const CATEGORIES: ProductCategory[] = ['Skincare', 'Haircare', 'Body Care', 'Sun Care', 'Gift Sets'];
 const SKIN_TYPES: SkinType[] = ['All Skin Types', 'Normal', 'Dry', 'Oily', 'Combination', 'Sensitive'];
-const CONCERNS: SkinConcern[] = ['Hydration', 'Brightening', 'Barrier Repair', 'Anti-Aging', 'Acne & Blemishes', 'Sun Protection', 'Hair Repair'];
 
 function ProductsContent() {
   const searchParams = useSearchParams();
@@ -29,10 +28,8 @@ function ProductsContent() {
     categoryParam ? [categoryParam as ProductCategory] : []
   );
   const [selectedSkinTypes, setSelectedSkinTypes] = useState<SkinType[]>([]);
-  const [selectedConcerns, setSelectedConcerns] = useState<SkinConcern[]>([]);
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 30000]);
   const [minRating, setMinRating] = useState<number>(0);
-  const [inStockOnly, setInStockOnly] = useState<boolean>(false);
   const [sortBy, setSortBy] = useState<'featured' | 'price-asc' | 'price-desc' | 'rating' | 'newest'>('featured');
   const searchQuery = searchParams.get('q') || '';
 
@@ -51,10 +48,8 @@ function ProductsContent() {
         const data = await productService.getProducts({
           categories: selectedCategories,
           skinTypes: selectedSkinTypes,
-          concerns: selectedConcerns,
           priceRange,
           minRating,
-          inStockOnly,
           sortBy,
           searchQuery,
         });
@@ -67,7 +62,7 @@ function ProductsContent() {
     };
 
     fetchFilteredProducts();
-  }, [selectedCategories, selectedSkinTypes, selectedConcerns, priceRange, minRating, inStockOnly, sortBy, searchQuery]);
+  }, [selectedCategories, selectedSkinTypes, priceRange, minRating, sortBy, searchQuery]);
 
   const toggleCategory = (cat: ProductCategory) => {
     setSelectedCategories((prev) =>
@@ -81,19 +76,11 @@ function ProductsContent() {
     );
   };
 
-  const toggleConcern = (concern: SkinConcern) => {
-    setSelectedConcerns((prev) =>
-      prev.includes(concern) ? prev.filter((c) => c !== concern) : [...prev, concern]
-    );
-  };
-
   const clearAllFilters = () => {
     setSelectedCategories([]);
     setSelectedSkinTypes([]);
-    setSelectedConcerns([]);
     setPriceRange([0, 30000]);
     setMinRating(0);
-    setInStockOnly(false);
     router.push('/products');
   };
 
@@ -101,12 +88,10 @@ function ProductsContent() {
     return (
       selectedCategories.length > 0 ||
       selectedSkinTypes.length > 0 ||
-      selectedConcerns.length > 0 ||
       minRating > 0 ||
-      inStockOnly ||
       searchQuery !== ''
     );
-  }, [selectedCategories, selectedSkinTypes, selectedConcerns, minRating, inStockOnly, searchQuery]);
+  }, [selectedCategories, selectedSkinTypes, minRating, searchQuery]);
 
   const FilterPanel = () => (
     <div className="space-y-8 text-left">
@@ -156,29 +141,6 @@ function ProductsContent() {
         </div>
       </div>
 
-      {/* Skin Concerns */}
-      <div className="space-y-3 border-t border-[#1A1A1A]/10 pt-6">
-        <h4 className="text-xs font-semibold uppercase tracking-[0.16em] text-[#1A1A1A]">
-          Skin & Hair Concern
-        </h4>
-        <div className="space-y-2">
-          {CONCERNS.map((c) => (
-            <label
-              key={c}
-              className="flex items-center gap-2.5 text-xs text-[#1A1A1A]/75 hover:text-[#1A1A1A] cursor-pointer select-none"
-            >
-              <input
-                type="checkbox"
-                checked={selectedConcerns.includes(c)}
-                onChange={() => toggleConcern(c)}
-                className="w-4 h-4 rounded border-[#1A1A1A]/30 text-[#1A1A1A] focus:ring-0 focus:ring-offset-0"
-              />
-              <span>{c}</span>
-            </label>
-          ))}
-        </div>
-      </div>
-
       {/* Price Range Slider */}
       <div className="space-y-3 border-t border-[#1A1A1A]/10 pt-6">
         <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.16em] text-[#1A1A1A]">
@@ -198,19 +160,6 @@ function ProductsContent() {
           <span>LKR 4,000</span>
           <span>LKR 30,000</span>
         </div>
-      </div>
-
-      {/* Availability */}
-      <div className="space-y-3 border-t border-[#1A1A1A]/10 pt-6">
-        <label className="flex items-center gap-2.5 text-xs text-[#1A1A1A] font-medium cursor-pointer select-none">
-          <input
-            type="checkbox"
-            checked={inStockOnly}
-            onChange={(e) => setInStockOnly(e.target.checked)}
-            className="w-4 h-4 rounded border-[#1A1A1A]/30 text-[#1A1A1A] focus:ring-0"
-          />
-          <span>In Stock Only</span>
-        </label>
       </div>
 
       {hasActiveFilters && (
@@ -279,18 +228,6 @@ function ProductsContent() {
             >
               <span>{st}</span>
               <button onClick={() => toggleSkinType(st)} className="hover:text-[#C87D55]">
-                <X className="w-3 h-3" />
-              </button>
-            </span>
-          ))}
-
-          {selectedConcerns.map((cn) => (
-            <span
-              key={cn}
-              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-[#1A1A1A]/15 text-xs text-[#1A1A1A]"
-            >
-              <span>{cn}</span>
-              <button onClick={() => toggleConcern(cn)} className="hover:text-[#C87D55]">
                 <X className="w-3 h-3" />
               </button>
             </span>

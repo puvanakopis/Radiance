@@ -12,7 +12,7 @@ class AdminService {
     const products = await productService.getProducts();
 
     const totalRevenue = orders.reduce((sum, ord) => sum + (ord.status !== 'Cancelled' ? ord.total : 0), 0);
-    const lowStockCount = products.filter(p => p.stock <= p.lowStockThreshold).length;
+    const lowStockCount = products.filter(p => p.status === 'Low Stock').length;
 
     const topProducts = products.slice(0, 4).map((product, i) => ({
       product,

@@ -69,9 +69,9 @@ export const CartDrawer: React.FC = () => {
         <div className="divide-y divide-[#1A1A1A]/10">
           {items.map((item) => (
             <div key={item.id} className="py-4 flex gap-4 items-start group">
-              <Link href={`/products/${item.product.slug}`} onClick={closeDrawer} className="shrink-0">
+              <Link href={`/products/${item.product.id}`} onClick={closeDrawer} className="shrink-0">
                 <img
-                  src={item.product.images[0]}
+                  src={item.product.image}
                   alt={item.product.name}
                   className="w-20 h-24 object-cover rounded-xl bg-[#EAE3D9]/40 border border-[#1A1A1A]/5"
                 />
@@ -81,7 +81,7 @@ export const CartDrawer: React.FC = () => {
                 <div>
                   <div className="flex items-start justify-between gap-2">
                     <Link
-                      href={`/products/${item.product.slug}`}
+                      href={`/products/${item.product.id}`}
                       onClick={closeDrawer}
                       className="font-serif text-sm font-medium text-[#1A1A1A] hover:text-[#C87D55] transition-colors truncate"
                     >

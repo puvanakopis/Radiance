@@ -50,14 +50,12 @@ export const mockCategories: Category[] = [
 
 export const mockProducts: Product[] = [
   {
-    id: 'prod-01',
+    id: 'prod_01',
+    _id: 'prod_01',
     name: 'Velvet Glow Serum',
-    subtitle: '10% Niacinamide + Multi-Peptide Complex',
-    slug: 'velvet-glow-serum',
     category: 'Skincare',
     subcategory: 'Serums',
     price: 8900,
-    originalPrice: 10500,
     size: '30ml',
     description: 'A transformative, featherlight serum engineered to illuminate tone, refine pore texture, and reinforce the skin barrier.',
     longDescription: 'Formulated with pharmaceutical-grade 10% Niacinamide, quadruple-weight Hyaluronic Acid, and bio-fermented peptide fractions. Velvet Glow Serum absorbs instantly into the dermal matrix without residue, delivering deep cell hydration and an unmistakable glass-skin sheen.',
@@ -73,27 +71,32 @@ export const mockProducts: Product[] = [
     ],
     howToUse: 'Dispense 3-4 drops onto cleansed, slightly damp skin every morning and evening. Gently press into face, neck, and décolletage using upward gliding motions before sealing with your favorite moisturizer.',
     skinTypes: ['All Skin Types', 'Normal', 'Dry', 'Combination', 'Oily', 'Sensitive'],
-    concerns: ['Brightening', 'Hydration', 'Barrier Repair', 'Anti-Aging'],
-    images: [
-      'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=1000&q=80'
-    ],
+    image: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=1000&q=80',
     rating: 4.9,
     reviewCount: 142,
-    stock: 28,
-    lowStockThreshold: 10,
-    sku: 'VEL-SER-001',
-    badge: 'BEST SELLER',
-    isNew: false,
-    isBestSeller: true,
-    isFeatured: true,
+    reviews: [
+      {
+        id: 'rev-01',
+        userId: 'cust-01',
+        rating: 5,
+        feedback: 'The single best serum I have used in Sri Lanka. It sinks in without any tackiness.',
+        createdAt: '2026-03-12'
+      },
+      {
+        id: 'rev-02',
+        userId: 'cust-02',
+        rating: 5,
+        feedback: 'Unbelievable glass-skin finish! Hydrates deeply without feeling heavy.',
+        createdAt: '2026-03-08'
+      }
+    ],
     status: 'In Stock',
     createdAt: '2026-01-15'
   },
   {
-    id: 'prod-02',
+    id: 'prod_02',
+    _id: 'prod_02',
     name: 'Skinova Hydrating Face Cream',
-    subtitle: 'Ceramide NP + Squalane Barrier Emulsion',
-    slug: 'skinova-hydrating-face-cream',
     category: 'Skincare',
     subcategory: 'Moisturizers',
     price: 7400,
@@ -110,27 +113,25 @@ export const mockProducts: Product[] = [
     ],
     howToUse: 'Warm a pea-sized amount between fingertips and smooth over face and neck in gentle circular motions. Ideal as the final step in your evening routine.',
     skinTypes: ['Dry', 'Normal', 'Sensitive', 'Combination'],
-    concerns: ['Hydration', 'Barrier Repair', 'Anti-Aging'],
-    images: [
-      'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=1000&q=80'
-    ],
+    image: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=1000&q=80',
     rating: 4.8,
     reviewCount: 98,
-    stock: 14,
-    lowStockThreshold: 10,
-    sku: 'VEL-CRM-002',
-    badge: 'BEST SELLER',
-    isNew: false,
-    isBestSeller: true,
-    isFeatured: true,
+    reviews: [
+      {
+        id: 'rev-03',
+        userId: 'cust-03',
+        rating: 5,
+        feedback: 'Saved my damaged barrier completely. So soothing and luxurious.',
+        createdAt: '2026-02-28'
+      }
+    ],
     status: 'In Stock',
     createdAt: '2026-02-01'
   },
   {
-    id: 'prod-03',
+    id: 'prod_03',
+    _id: 'prod_03',
     name: 'Gentle Cloud Cleanser',
-    subtitle: 'Amino Acid + Chamomile Micro-Foam',
-    slug: 'gentle-cloud-cleanser',
     category: 'Skincare',
     subcategory: 'Cleansers',
     price: 5200,
@@ -144,31 +145,20 @@ export const mockProducts: Product[] = [
     ],
     howToUse: 'Pump 2 times onto wet palms, massage gently over damp face for 60 seconds, and rinse with lukewarm water.',
     skinTypes: ['All Skin Types', 'Sensitive', 'Dry', 'Oily'],
-    concerns: ['Acne & Blemishes', 'Barrier Repair', 'Hydration'],
-    images: [
-      'https://images.unsplash.com/photo-1556228722-d0b5cd03456d?auto=format&fit=crop&w=1000&q=80'
-    ],
+    image: 'https://images.unsplash.com/photo-1556228722-d0b5cd03456d?auto=format&fit=crop&w=1000&q=80',
     rating: 4.9,
     reviewCount: 84,
-    stock: 45,
-    lowStockThreshold: 15,
-    sku: 'VEL-CLN-003',
-    badge: 'CLEAN FORMULA',
-    isNew: true,
-    isBestSeller: false,
-    isFeatured: true,
+    reviews: [],
     status: 'In Stock',
     createdAt: '2026-02-14'
   },
   {
-    id: 'prod-04',
+    id: 'prod_04',
+    _id: 'prod_04',
     name: 'Radiance Vitamin C Serum',
-    subtitle: '15% Ethyl Ascorbic Acid + Ferulic Acid',
-    slug: 'radiance-vitamin-c-serum',
     category: 'Skincare',
     subcategory: 'Serums',
     price: 9800,
-    originalPrice: 11500,
     size: '30ml',
     description: 'A stabilized, non-oxidizing antioxidant elixir that fades hyperpigmentation and boosts collagen radiance.',
     longDescription: 'Harnesses 15% 3-O-Ethyl Ascorbic Acid stabilized with pure Ferulic acid and Vitamin E. Formulated in a UV-shielded amber vessel to guarantee full potency down to the final drop.',
@@ -179,27 +169,17 @@ export const mockProducts: Product[] = [
     ],
     howToUse: 'Apply 3-4 drops in the morning prior to moisturizer and broad-spectrum sunscreen.',
     skinTypes: ['Normal', 'Combination', 'Oily', 'Dry'],
-    concerns: ['Brightening', 'Anti-Aging', 'Sun Protection'],
-    images: [
-      'https://images.unsplash.com/photo-1608248597359-5b4306354897?auto=format&fit=crop&w=1000&q=80'
-    ],
+    image: 'https://images.unsplash.com/photo-1608248597359-5b4306354897?auto=format&fit=crop&w=1000&q=80',
     rating: 4.7,
     reviewCount: 112,
-    stock: 19,
-    lowStockThreshold: 10,
-    sku: 'VEL-VIT-004',
-    badge: 'AWARD WINNER',
-    isNew: false,
-    isBestSeller: true,
-    isFeatured: true,
+    reviews: [],
     status: 'In Stock',
     createdAt: '2026-01-20'
   },
   {
-    id: 'prod-05',
+    id: 'prod_05',
+    _id: 'prod_05',
     name: 'Mineral SPF 50 Sunscreen',
-    subtitle: 'Non-Nano Zinc Oxide + Ceylon Moringa Shield',
-    slug: 'mineral-spf-50-sunscreen',
     category: 'Sun Care',
     subcategory: 'Face Sunscreen',
     price: 6800,
@@ -213,27 +193,25 @@ export const mockProducts: Product[] = [
     ],
     howToUse: 'Apply generously 15 minutes before sun exposure as the final step of your skincare routine. Reapply every 2 hours.',
     skinTypes: ['All Skin Types', 'Sensitive', 'Normal', 'Oily', 'Dry'],
-    concerns: ['Sun Protection', 'Anti-Aging', 'Barrier Repair'],
-    images: [
-      'https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?auto=format&fit=crop&w=1000&q=80'
-    ],
+    image: 'https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?auto=format&fit=crop&w=1000&q=80',
     rating: 4.9,
     reviewCount: 165,
-    stock: 32,
-    lowStockThreshold: 10,
-    sku: 'VEL-SUN-005',
-    badge: 'BEST SELLER',
-    isNew: false,
-    isBestSeller: true,
-    isFeatured: true,
+    reviews: [
+      {
+        id: 'rev-04',
+        userId: 'cust-04',
+        rating: 5,
+        feedback: 'Zero white cast on South Asian skin! Pure perfection.',
+        createdAt: '2026-03-01'
+      }
+    ],
     status: 'In Stock',
     createdAt: '2026-01-10'
   },
   {
-    id: 'prod-06',
+    id: 'prod_06',
+    _id: 'prod_06',
     name: 'Botanical Repair Shampoo',
-    subtitle: 'Hydrolyzed Silk + Rosemary Scalp Actives',
-    slug: 'botanical-repair-shampoo',
     category: 'Haircare',
     subcategory: 'Shampoo',
     price: 6200,
@@ -247,27 +225,17 @@ export const mockProducts: Product[] = [
     ],
     howToUse: 'Massage into wet scalp for 2 minutes to activate botanical extracts, then glide through mid-lengths and rinse thoroughly.',
     skinTypes: ['All Skin Types'],
-    concerns: ['Hair Repair'],
-    images: [
-      'https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?auto=format&fit=crop&w=1000&q=80'
-    ],
+    image: 'https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?auto=format&fit=crop&w=1000&q=80',
     rating: 4.8,
     reviewCount: 76,
-    stock: 22,
-    lowStockThreshold: 8,
-    sku: 'VEL-HAR-006',
-    badge: 'ORGANIC ACTIVES',
-    isNew: false,
-    isBestSeller: false,
-    isFeatured: true,
+    reviews: [],
     status: 'In Stock',
     createdAt: '2026-02-18'
   },
   {
-    id: 'prod-07',
+    id: 'prod_07',
+    _id: 'prod_07',
     name: 'Nourishing Hair Mask',
-    subtitle: 'Cold-Pressed Argan + Cupuaçu Butter',
-    slug: 'nourishing-hair-mask',
     category: 'Haircare',
     subcategory: 'Hair Masks',
     price: 7800,
@@ -281,27 +249,17 @@ export const mockProducts: Product[] = [
     ],
     howToUse: 'Apply generously to damp, shampooed hair from mid-lengths to ends. Leave for 5-10 minutes before rinsing with cool water.',
     skinTypes: ['All Skin Types'],
-    concerns: ['Hair Repair', 'Hydration'],
-    images: [
-      'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=1000&q=80'
-    ],
+    image: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=1000&q=80',
     rating: 4.9,
     reviewCount: 53,
-    stock: 18,
-    lowStockThreshold: 6,
-    sku: 'VEL-MSK-007',
-    badge: 'BEST SELLER',
-    isNew: false,
-    isBestSeller: true,
-    isFeatured: false,
+    reviews: [],
     status: 'In Stock',
     createdAt: '2026-01-28'
   },
   {
-    id: 'prod-08',
+    id: 'prod_08',
+    _id: 'prod_08',
     name: 'Silk Touch Body Lotion',
-    subtitle: 'Ceylon Black Tea + Shea Butter Elixir',
-    slug: 'silk-touch-body-lotion',
     category: 'Body Care',
     subcategory: 'Body Lotion',
     price: 5900,
@@ -315,31 +273,20 @@ export const mockProducts: Product[] = [
     ],
     howToUse: 'Smooth generously over the entire body right after bathing while skin is still slightly warm and damp.',
     skinTypes: ['All Skin Types', 'Dry', 'Normal'],
-    concerns: ['Hydration', 'Barrier Repair'],
-    images: [
-      'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=1000&q=80'
-    ],
+    image: 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=1000&q=80',
     rating: 4.8,
     reviewCount: 68,
-    stock: 25,
-    lowStockThreshold: 10,
-    sku: 'VEL-BOD-008',
-    badge: 'NEW ARRIVAL',
-    isNew: true,
-    isBestSeller: false,
-    isFeatured: true,
+    reviews: [],
     status: 'In Stock',
     createdAt: '2026-03-01'
   },
   {
-    id: 'prod-09',
+    id: 'prod_09',
+    _id: 'prod_09',
     name: 'Overnight Recovery Cream',
-    subtitle: '0.3% Encapsulated Retinal + Bakuchiol',
-    slug: 'overnight-recovery-cream',
     category: 'Skincare',
     subcategory: 'Moisturizers',
     price: 9400,
-    originalPrice: 11000,
     size: '50ml',
     description: 'A breakthrough nocturnal treatment that accelerates cellular renewal without irritation or dryness.',
     longDescription: 'Synergizes micro-encapsulated Retinaldehyde with plant-derived Bakuchiol and soothing Bisabolol to visibly soften fine lines, firm laxity, and restore morning vitality.',
@@ -350,27 +297,17 @@ export const mockProducts: Product[] = [
     ],
     howToUse: 'Apply 1-2 pumps at night to clean skin. Begin twice weekly and gradually increase frequency.',
     skinTypes: ['Normal', 'Dry', 'Combination', 'Oily'],
-    concerns: ['Anti-Aging', 'Barrier Repair', 'Brightening'],
-    images: [
-      'https://images.unsplash.com/photo-1601049541289-9b1b7bbbfe19?auto=format&fit=crop&w=1000&q=80'
-    ],
+    image: 'https://images.unsplash.com/photo-1601049541289-9b1b7bbbfe19?auto=format&fit=crop&w=1000&q=80',
     rating: 4.9,
     reviewCount: 91,
-    stock: 12,
-    lowStockThreshold: 5,
-    sku: 'VEL-NIT-009',
-    badge: 'BEST SELLER',
-    isNew: false,
-    isBestSeller: true,
-    isFeatured: true,
+    reviews: [],
     status: 'In Stock',
     createdAt: '2026-01-05'
   },
   {
-    id: 'prod-10',
+    id: 'prod_10',
+    _id: 'prod_10',
     name: 'Daily Barrier Lotion',
-    subtitle: 'Prebiotics + Centella Asiatica Emulsion',
-    slug: 'daily-barrier-lotion',
     category: 'Skincare',
     subcategory: 'Moisturizers',
     price: 4500,
@@ -384,31 +321,20 @@ export const mockProducts: Product[] = [
     ],
     howToUse: 'Apply 2 pumps evenly to face and neck every morning under sunscreen.',
     skinTypes: ['All Skin Types', 'Sensitive', 'Oily', 'Combination'],
-    concerns: ['Barrier Repair', 'Hydration', 'Acne & Blemishes'],
-    images: [
-      'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=1000&q=80'
-    ],
+    image: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=1000&q=80',
     rating: 4.8,
     reviewCount: 47,
-    stock: 36,
-    lowStockThreshold: 10,
-    sku: 'VEL-BAR-010',
-    badge: 'CLEAN FORMULA',
-    isNew: true,
-    isBestSeller: false,
-    isFeatured: false,
+    reviews: [],
     status: 'In Stock',
     createdAt: '2026-02-25'
   },
   {
-    id: 'prod-11',
+    id: 'prod_11',
+    _id: 'prod_11',
     name: 'The Morning Ritual Discovery Set',
-    subtitle: 'Full 4-Step Skincare Ceremony',
-    slug: 'the-morning-ritual-discovery-set',
     category: 'Gift Sets',
     subcategory: 'Morning Ritual Kit',
     price: 24500,
-    originalPrice: 28900,
     size: '4 Piece Kit',
     description: 'Our award-winning 4-piece ritual boxed in organic textured paper and raw linen ribbon.',
     longDescription: 'Includes: Gentle Cloud Cleanser (50ml), Velvet Glow Serum (30ml), Skinova Hydrating Face Cream (30ml), and Mineral SPF 50 (30ml). Everything you need for radiant, perfected skin from sunrise to dusk.',
@@ -418,27 +344,17 @@ export const mockProducts: Product[] = [
     ],
     howToUse: 'Follow steps 1 to 4 sequentially every morning: Cleanse -> Treat with Serum -> Hydrate with Cream -> Protect with Mineral SPF.',
     skinTypes: ['All Skin Types'],
-    concerns: ['Hydration', 'Brightening', 'Sun Protection', 'Barrier Repair'],
-    images: [
-      'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=1000&q=80'
-    ],
+    image: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=1000&q=80',
     rating: 5.0,
     reviewCount: 38,
-    stock: 10,
-    lowStockThreshold: 5,
-    sku: 'VEL-SET-011',
-    badge: 'LIMITED EDITION',
-    isNew: true,
-    isBestSeller: true,
-    isFeatured: true,
+    reviews: [],
     status: 'In Stock',
     createdAt: '2026-03-05'
   },
   {
-    id: 'prod-12',
+    id: 'prod_12',
+    _id: 'prod_12',
     name: 'Botanical Exfoliating Face Polish',
-    subtitle: 'Rice Bran + Bamboo Silicas + Lactic Acid',
-    slug: 'botanical-exfoliating-face-polish',
     category: 'Skincare',
     subcategory: 'Face Oils',
     price: 6100,
@@ -452,19 +368,10 @@ export const mockProducts: Product[] = [
     ],
     howToUse: 'Massage onto clean, damp skin for 60 seconds with light pressure. Rinse with lukewarm water. Use 2-3 times weekly.',
     skinTypes: ['Normal', 'Combination', 'Oily', 'Dry'],
-    concerns: ['Brightening', 'Acne & Blemishes'],
-    images: [
-      'https://images.unsplash.com/photo-1608248597359-5b4306354897?auto=format&fit=crop&w=1000&q=80'
-    ],
+    image: 'https://images.unsplash.com/photo-1608248597359-5b4306354897?auto=format&fit=crop&w=1000&q=80',
     rating: 4.8,
     reviewCount: 42,
-    stock: 8,
-    lowStockThreshold: 10,
-    sku: 'VEL-POL-012',
-    badge: 'CLEAN FORMULA',
-    isNew: false,
-    isBestSeller: false,
-    isFeatured: false,
+    reviews: [],
     status: 'Low Stock',
     createdAt: '2026-02-10'
   }
@@ -473,7 +380,7 @@ export const mockProducts: Product[] = [
 export const mockReviews: Review[] = [
   {
     id: 'rev-01',
-    productId: 'prod-01',
+    productId: 'prod_01',
     userName: 'Kavindi Perera',
     userLocation: 'Colombo 07',
     rating: 5,
@@ -486,7 +393,7 @@ export const mockReviews: Review[] = [
   },
   {
     id: 'rev-02',
-    productId: 'prod-01',
+    productId: 'prod_01',
     userName: 'Dilani Samarasinghe',
     userLocation: 'Kandy',
     rating: 5,
@@ -499,7 +406,7 @@ export const mockReviews: Review[] = [
   },
   {
     id: 'rev-03',
-    productId: 'prod-02',
+    productId: 'prod_02',
     userName: 'Sachini Wickramasinghe',
     userLocation: 'Galle',
     rating: 5,
@@ -512,7 +419,7 @@ export const mockReviews: Review[] = [
   },
   {
     id: 'rev-04',
-    productId: 'prod-05',
+    productId: 'prod_05',
     userName: 'Amani Jayawardena',
     userLocation: 'Colombo 03',
     rating: 5,
@@ -551,7 +458,7 @@ export const mockOrders: Order[] = [
     },
     items: [
       {
-        productId: 'prod-01',
+        productId: 'prod_01',
         productName: 'Velvet Glow Serum',
         productImage: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=1000&q=80',
         size: '30ml',
@@ -560,7 +467,7 @@ export const mockOrders: Order[] = [
         sku: 'VEL-SER-001'
       },
       {
-        productId: 'prod-02',
+        productId: 'prod_02',
         productName: 'Skinova Hydrating Face Cream',
         productImage: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=1000&q=80',
         size: '50ml',
@@ -610,7 +517,7 @@ export const mockOrders: Order[] = [
     },
     items: [
       {
-        productId: 'prod-05',
+        productId: 'prod_05',
         productName: 'Mineral SPF 50 Sunscreen',
         productImage: 'https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?auto=format&fit=crop&w=1000&q=80',
         size: '50ml',
@@ -659,7 +566,7 @@ export const mockOrders: Order[] = [
     },
     items: [
       {
-        productId: 'prod-11',
+        productId: 'prod_11',
         productName: 'The Morning Ritual Discovery Set',
         productImage: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=1000&q=80',
         size: '4 Piece Kit',
@@ -685,4 +592,3 @@ export const mockOrders: Order[] = [
     ]
   }
 ];
-

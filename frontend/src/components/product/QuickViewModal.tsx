@@ -36,7 +36,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({ product, isOpen,
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-center">
         <div className="aspect-[4/5] rounded-2xl overflow-hidden bg-[#EAE3D9]/40 border border-[#1A1A1A]/10">
           <img
-            src={product.images[0]}
+            src={product.image}
             alt={product.name}
             className="w-full h-full object-cover"
           />
@@ -44,8 +44,9 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({ product, isOpen,
 
         <div className="space-y-4 text-left">
           <div className="flex items-center gap-2">
-            {product.badge && <Badge badge={product.badge} size="xs" />}
-            <span className="text-[10px] uppercase tracking-wider text-[#1A1A1A]/50">
+            {product.status === 'Low Stock' && <Badge variant="terracotta" size="xs">Low Stock</Badge>}
+            {product.status === 'Out of Stock' && <Badge variant="dark" size="xs">Sold Out</Badge>}
+            <span className="text-[10px] uppercase tracking-wider text-[#1A1A1A]/50 font-medium">
               {product.category}
             </span>
           </div>
@@ -54,9 +55,6 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({ product, isOpen,
             <h3 className="font-serif text-2xl text-[#1A1A1A] font-medium leading-tight">
               {product.name}
             </h3>
-            {product.subtitle && (
-              <p className="text-xs text-[#1A1A1A]/60 mt-0.5">{product.subtitle}</p>
-            )}
           </div>
 
           <div className="flex items-center justify-between">
@@ -98,9 +96,9 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({ product, isOpen,
                 size="md"
                 className="flex-1"
                 onClick={handleAddToCart}
-                disabled={product.stock <= 0}
+                disabled={product.status === 'Out of Stock'}
               >
-                {product.stock > 0 ? `Add to Bag • LKR ${(product.price * quantity).toLocaleString()}` : 'Out of Stock'}
+                {product.status !== 'Out of Stock' ? `Add to Bag • LKR ${(product.price * quantity).toLocaleString()}` : 'Out of Stock'}
               </Button>
 
               <button
@@ -116,7 +114,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({ product, isOpen,
 
             <div className="text-center pt-2">
               <Link
-                href={`/products/${product.slug}`}
+                href={`/products/${product.id}`}
                 onClick={onClose}
                 className="inline-flex items-center gap-1.5 text-xs text-[#C87D55] font-semibold hover:underline"
               >

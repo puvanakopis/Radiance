@@ -171,12 +171,12 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({ isOpen, onClose })
                     {results.map((product) => (
                       <Link
                         key={product.id}
-                        href={`/products/${product.slug}`}
+                        href={`/products/${product.id}`}
                         onClick={onClose}
                         className="p-3 rounded-2xl bg-white border border-[#1A1A1A]/5 hover:border-[#C87D55]/50 flex items-center gap-3 transition-all hover:shadow-md group"
                       >
                         <img
-                          src={product.images[0]}
+                          src={product.image}
                           alt={product.name}
                           className="w-14 h-16 object-cover rounded-xl bg-[#FAF8F5]"
                         />

@@ -205,7 +205,7 @@ export default function ProductDetailPage({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-start w-full">
         {/* Gallery column */}
         <div className="lg:col-span-5 w-full">
-          <ProductGallery images={product.images} productName={product.name} />
+          <ProductGallery image={product.image} productName={product.name} />
         </div>
 
         {/* Product Info Column */}
@@ -214,7 +214,8 @@ export default function ProductDetailPage({
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                {product.badge && <Badge badge={product.badge} />}
+                {product.status === 'Low Stock' && <Badge variant="terracotta">Low Stock</Badge>}
+                {product.status === 'Out of Stock' && <Badge variant="dark">Sold Out</Badge>}
                 <span className="text-xs uppercase tracking-[0.18em] font-medium text-[#1A1A1A]/50">
                   {product.category}
                 </span>
@@ -232,12 +233,6 @@ export default function ProductDetailPage({
               {product.name}
             </h1>
 
-            {product.subtitle && (
-              <p className="text-xs sm:text-sm text-[#1A1A1A]/60 font-light">
-                {product.subtitle}
-              </p>
-            )}
-
             {/* Rating & Review Counter */}
             <div className="flex items-center gap-3 pt-1">
               <Rating rating={product.rating} reviewCount={product.reviewCount} size="sm" />
@@ -251,11 +246,6 @@ export default function ProductDetailPage({
             <span className="font-serif text-2xl sm:text-3xl font-medium text-[#1A1A1A]">
               LKR {product.price.toLocaleString()}
             </span>
-            {product.originalPrice && product.originalPrice > product.price && (
-              <span className="text-sm text-[#1A1A1A]/40 line-through">
-                LKR {product.originalPrice.toLocaleString()}
-              </span>
-            )}
             <span className="ml-auto text-[11px] text-[#1A1A1A]/60">
               Tax included • Free returns
             </span>
@@ -329,13 +319,13 @@ export default function ProductDetailPage({
                 size="lg"
                 fullWidth
                 onClick={handleAddToCart}
-                disabled={product.stock === 0}
+                disabled={product.status === 'Out of Stock'}
               >
                 {isAdded ? (
                   <>
                     <Check className="w-4 h-4" /> Added to Bag
                   </>
-                ) : product.stock === 0 ? (
+                ) : product.status === 'Out of Stock' ? (
                   'Out of Stock'
                 ) : (
                   `Add to Bag • LKR ${(product.price * quantity).toLocaleString()}`
@@ -355,14 +345,14 @@ export default function ProductDetailPage({
             {/* Stock status indicator */}
             <div className="flex items-center justify-between text-xs text-[#1A1A1A]/60 pt-1">
               <span className="flex items-center gap-1.5">
-                <span className={`w-2 h-2 rounded-full ${product.stock > 0 ? 'bg-[#8A9A86]' : 'bg-[#C87D55]'}`} />
-                {product.stock > product.lowStockThreshold
+                <span className={`w-2 h-2 rounded-full ${product.status !== 'Out of Stock' ? 'bg-[#8A9A86]' : 'bg-[#C87D55]'}`} />
+                {product.status === 'In Stock'
                   ? 'In Stock & Ready for Immediate Dispatch'
-                  : product.stock > 0
-                  ? `Only ${product.stock} units remaining in cleanroom inventory`
+                  : product.status === 'Low Stock'
+                  ? 'Limited Supply Remaining in Cleanroom Inventory'
                   : 'Currently Sold Out'}
               </span>
-              <span className="text-[11px] text-[#1A1A1A]/40">SKU: {product.sku}</span>
+              <span className="text-[11px] text-[#1A1A1A]/40">ID: {product.id}</span>
             </div>
           </div>
 

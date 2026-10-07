@@ -5,16 +5,17 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Maximize2, X } from 'lucide-react';
 
 interface ProductGalleryProps {
-  images: string[];
+  image?: string;
+  images?: string[];
   productName: string;
 }
 
-export const ProductGallery: React.FC<ProductGalleryProps> = ({ images, productName }) => {
+export const ProductGallery: React.FC<ProductGalleryProps> = ({ image, images, productName }) => {
   const [isZoomed, setIsZoomed] = useState(false);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 50, y: 50 });
 
-  const activeImage = images[0] || 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=1000&q=80';
+  const activeImage = image || (images && images[0]) || 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=1000&q=80';
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     const { left, top, width, height } = e.currentTarget.getBoundingClientRect();

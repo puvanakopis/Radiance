@@ -3,47 +3,42 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Plus, 
-  Minus,
   Search, 
   Edit3, 
   Trash2,
   AlertTriangle,
-  Package,
-  Boxes,
-  CheckCircle2,
-  Sparkles
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
 import { productService } from '@/services/productService';
 import { useToast } from '@/context/ToastContext';
 import { Product, ProductCategory } from '@/types';
 
 const CATEGORIES: ProductCategory[] = ['Skincare', 'Haircare', 'Body Care', 'Sun Care', 'Gift Sets'];
-type StockFilter = 'All' | 'In Stock' | 'Low Stock' | 'Out of Stock';
+type StatusFilter = 'All' | 'In Stock' | 'Low Stock' | 'Out of Stock';
 
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
-  const [stockFilter, setStockFilter] = useState<StockFilter>('All');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('All');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
-  // Form states
+  // Form states matching product.model.js
   const [name, setName] = useState('');
-  const [subtitle, setSubtitle] = useState('');
-  const [sku, setSku] = useState('');
   const [category, setCategory] = useState<ProductCategory>('Skincare');
+  const [subcategory, setSubcategory] = useState('General');
   const [price, setPrice] = useState(8900);
-  const [originalPrice, setOriginalPrice] = useState<number | undefined>(undefined);
-  const [stock, setStock] = useState(25);
-  const [lowStockThreshold, setLowStockThreshold] = useState(10);
-  const [size, setSize] = useState('30ml');
+  const [size, setSize] = useState('50ml');
+  const [status, setStatus] = useState<'In Stock' | 'Low Stock' | 'Out of Stock'>('In Stock');
   const [description, setDescription] = useState('');
+  const [longDescription, setLongDescription] = useState('');
+  const [howToUse, setHowToUse] = useState('');
+  const [ingredientsText, setIngredientsText] = useState('');
+  const [skinTypesText, setSkinTypesText] = useState('All Skin Types');
   const [imageUrl, setImageUrl] = useState('');
 
   const { showToast } = useToast();
@@ -64,43 +59,35 @@ export default function AdminProductsPage() {
     loadProducts();
   }, []);
 
-  const handleAdjustStock = async (product: Product, delta: number) => {
-    const newStock = Math.max(0, product.stock + delta);
-    const newStatus =
-      newStock === 0
-        ? 'Out of Stock'
-        : newStock <= product.lowStockThreshold
-        ? 'Low Stock'
-        : 'In Stock';
-
+  const handleUpdateStatus = async (product: Product, newStatus: 'In Stock' | 'Low Stock' | 'Out of Stock') => {
     try {
       await productService.updateProduct(product.id, {
-        stock: newStock,
         status: newStatus,
       });
       showToast({
         type: 'success',
-        title: 'Stock Updated',
-        message: `${product.name} inventory set to ${newStock} units`,
+        title: 'Status Updated',
+        message: `${product.name} status set to ${newStatus}`,
       });
       loadProducts();
     } catch {
-      showToast({ type: 'error', title: 'Could not update stock' });
+      showToast({ type: 'error', title: 'Could not update status' });
     }
   };
 
   const handleOpenAddModal = () => {
     setEditingProduct(null);
     setName('');
-    setSubtitle('Pure Ceylon Bio-Actives');
-    setSku(`VEL-${Math.floor(100 + Math.random() * 900)}`);
     setCategory('Skincare');
+    setSubcategory('General');
     setPrice(6500);
-    setOriginalPrice(undefined);
-    setStock(20);
-    setLowStockThreshold(10);
     setSize('50ml');
+    setStatus('In Stock');
     setDescription('');
+    setLongDescription('');
+    setHowToUse('');
+    setIngredientsText('Aqua, Glycerin, Botanical Extract, Hyaluronic Acid');
+    setSkinTypesText('All Skin Types');
     setImageUrl('https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=800&q=80');
     setIsModalOpen(true);
   };
@@ -108,16 +95,17 @@ export default function AdminProductsPage() {
   const handleOpenEditModal = (p: Product) => {
     setEditingProduct(p);
     setName(p.name);
-    setSubtitle(p.subtitle || '');
-    setSku(p.sku);
     setCategory(p.category);
+    setSubcategory(p.subcategory || 'General');
     setPrice(p.price);
-    setOriginalPrice(p.originalPrice);
-    setStock(p.stock);
-    setLowStockThreshold(p.lowStockThreshold);
-    setSize(p.size);
+    setSize(p.size || '50ml');
+    setStatus(p.status);
     setDescription(p.description);
-    setImageUrl(p.images?.[0] || 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=800&q=80');
+    setLongDescription(p.longDescription || '');
+    setHowToUse(p.howToUse || '');
+    setIngredientsText((p.ingredients || []).join(', '));
+    setSkinTypesText((p.skinTypes || ['All Skin Types']).join(', '));
+    setImageUrl(p.image || 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=800&q=80');
     setIsModalOpen(true);
   };
 
@@ -132,47 +120,50 @@ export default function AdminProductsPage() {
   const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const statusVal = stock === 0 ? 'Out of Stock' : stock <= lowStockThreshold ? 'Low Stock' : 'In Stock';
+      const parsedIngredients = ingredientsText
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+
+      const parsedSkinTypes = skinTypesText
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+
       if (editingProduct) {
         await productService.updateProduct(editingProduct.id, {
           name,
-          subtitle,
-          sku,
           category,
+          subcategory,
           price: Number(price),
-          originalPrice: originalPrice ? Number(originalPrice) : undefined,
-          stock: Number(stock),
-          lowStockThreshold: Number(lowStockThreshold),
           size,
           description,
-          images: [imageUrl],
-          status: statusVal
+          longDescription: longDescription || description,
+          howToUse,
+          ingredients: parsedIngredients,
+          skinTypes: parsedSkinTypes.length > 0 ? (parsedSkinTypes as any) : ['All Skin Types'],
+          image: imageUrl,
+          status,
         });
         showToast({ type: 'success', title: 'Product Updated Successfully' });
       } else {
         await productService.createProduct({
           name,
-          subtitle,
-          slug: name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-          sku,
           category,
-          subcategory: 'Formulation',
+          subcategory: subcategory || 'General',
           price: Number(price),
-          originalPrice: originalPrice ? Number(originalPrice) : undefined,
-          size,
+          size: size || '50ml',
           description,
-          longDescription: description,
-          ingredients: ['Pure Distilled Aqua', 'Botanical Bio-Lipids', 'Hyaluronic Acid'],
-          activeIngredients: [{ name: 'Ceylon Botanical Extract', benefit: 'Barrier fortification & antioxidant repair' }],
-          howToUse: 'Dispense 2-3 drops into palms and press gently into cleansed face.',
-          skinTypes: ['All Skin Types'],
-          concerns: ['Hydration'],
-          images: [imageUrl],
+          longDescription: longDescription || description,
+          ingredients: parsedIngredients.length > 0 ? parsedIngredients : ['Pure Distilled Aqua', 'Botanical Bio-Lipids', 'Hyaluronic Acid'],
+          activeIngredients: [{ name: 'Botanical Bio-Actives', benefit: 'Barrier fortification & dermal hydration' }],
+          howToUse: howToUse || 'Dispense 2-3 drops into palms and press gently into cleansed skin.',
+          skinTypes: parsedSkinTypes.length > 0 ? (parsedSkinTypes as any) : ['All Skin Types'],
+          image: imageUrl,
           rating: 5.0,
           reviewCount: 0,
-          stock: Number(stock),
-          lowStockThreshold: Number(lowStockThreshold),
-          status: statusVal
+          reviews: [],
+          status,
         });
         showToast({ type: 'success', title: 'New Product Created' });
       }
@@ -183,20 +174,17 @@ export default function AdminProductsPage() {
     }
   };
 
-  const lowStockCount = products.filter(p => p.stock <= p.lowStockThreshold).length;
+  const lowStockCount = products.filter(p => p.status === 'Low Stock').length;
 
   const filtered = products.filter((p) => {
     const matchesSearch =
       p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.sku.toLowerCase().includes(searchQuery.toLowerCase());
+      p.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (p.subcategory && p.subcategory.toLowerCase().includes(searchQuery.toLowerCase()));
     const matchesCat = selectedCategory === 'All' || p.category === selectedCategory;
-    const matchesStock =
-      stockFilter === 'All' ||
-      (stockFilter === 'In Stock' && p.stock > p.lowStockThreshold) ||
-      (stockFilter === 'Low Stock' && p.stock > 0 && p.stock <= p.lowStockThreshold) ||
-      (stockFilter === 'Out of Stock' && p.stock === 0);
+    const matchesStatus = statusFilter === 'All' || p.status === statusFilter;
 
-    return matchesSearch && matchesCat && matchesStock;
+    return matchesSearch && matchesCat && matchesStatus;
   });
 
   return (
@@ -207,13 +195,13 @@ export default function AdminProductsPage() {
           <span className="text-[10px] uppercase tracking-[0.25em] font-medium text-[#C87D55] block mb-1">
             Cleanroom Catalog & Inventory
           </span>
-          <h1 className="font-serif text-3xl text-[#1A1A1A]">Products & Stock Management</h1>
+          <h1 className="font-serif text-3xl text-[#1A1A1A]">Products & Status Management</h1>
         </div>
 
         <div className="flex items-center gap-3">
           {lowStockCount > 0 && (
             <button
-              onClick={() => setStockFilter('Low Stock')}
+              onClick={() => setStatusFilter('Low Stock')}
               className="px-4 py-2 rounded-2xl bg-[#C87D55]/15 border border-[#C87D55]/30 flex items-center gap-2 text-xs font-semibold text-[#C87D55] hover:bg-[#C87D55]/25 transition-colors cursor-pointer"
             >
               <AlertTriangle className="w-4 h-4" />
@@ -236,19 +224,19 @@ export default function AdminProductsPage() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search formulations by name or SKU..."
+              placeholder="Search formulations by name, ID, or subcategory..."
               className="w-full pl-10 pr-4 py-2 bg-[#FAF8F5] border border-[#1A1A1A]/10 rounded-full text-xs text-[#1A1A1A] outline-none focus:border-[#C87D55]"
             />
           </div>
 
-          {/* Stock state pills */}
+          {/* Status state pills */}
           <div className="flex items-center gap-1.5 w-full sm:w-auto overflow-x-auto">
-            {(['All', 'In Stock', 'Low Stock', 'Out of Stock'] as StockFilter[]).map((st) => (
+            {(['All', 'In Stock', 'Low Stock', 'Out of Stock'] as StatusFilter[]).map((st) => (
               <button
                 key={st}
-                onClick={() => setStockFilter(st)}
+                onClick={() => setStatusFilter(st)}
                 className={`px-3 py-1.5 rounded-full text-xs uppercase tracking-wider whitespace-nowrap transition-colors cursor-pointer ${
-                  stockFilter === st
+                  statusFilter === st
                     ? 'bg-[#1A1A1A] text-[#FAF8F5] font-semibold'
                     : 'bg-[#FAF8F5] text-[#1A1A1A]/70 hover:text-[#1A1A1A]'
                 }`}
@@ -277,16 +265,16 @@ export default function AdminProductsPage() {
         </div>
       </div>
 
-      {/* Unified Product & Inventory Table */}
+      {/* Unified Product Table */}
       <div className="bg-white border border-[#1A1A1A]/10 rounded-3xl overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
               <tr className="border-b border-[#1A1A1A]/10 bg-[#FAF8F5]/80 text-[#1A1A1A]/60 uppercase tracking-widest font-semibold">
-                <th className="py-4 px-6">Product / SKU</th>
-                <th className="py-4 px-6">Category</th>
+                <th className="py-4 px-6">Product</th>
+                <th className="py-4 px-6">Category & Subcategory</th>
                 <th className="py-4 px-6">Price</th>
-                <th className="py-4 px-6">Stock Level</th>
+                <th className="py-4 px-6">Rating / Reviews</th>
                 <th className="py-4 px-6">Status</th>
                 <th className="py-4 px-6 text-right">Actions</th>
               </tr>
@@ -297,7 +285,7 @@ export default function AdminProductsPage() {
                   <td className="py-4 px-6">
                     <div className="flex items-center gap-3">
                       <img
-                        src={prod.images?.[0] || 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=800&q=80'}
+                        src={prod.image || 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=800&q=80'}
                         alt={prod.name}
                         className="w-12 h-14 rounded-xl object-cover bg-[#EAE3D9]/40 border border-[#1A1A1A]/5 shrink-0"
                       />
@@ -305,49 +293,32 @@ export default function AdminProductsPage() {
                         <span className="font-serif text-sm font-medium text-[#1A1A1A] block">
                           {prod.name}
                         </span>
-                        <span className="text-[10px] text-[#1A1A1A]/50">SKU: {prod.sku} • {prod.size}</span>
+                        <span className="text-[10px] text-[#1A1A1A]/50">ID: {prod.id} • {prod.size}</span>
                       </div>
                     </div>
                   </td>
-                  <td className="py-4 px-6 font-medium text-[#1A1A1A]/80">{prod.category}</td>
+                  <td className="py-4 px-6 font-medium text-[#1A1A1A]/80">
+                    <div>
+                      <span>{prod.category}</span>
+                      <span className="block text-[10px] text-[#1A1A1A]/50">{prod.subcategory || 'General'}</span>
+                    </div>
+                  </td>
                   <td className="py-4 px-6 font-semibold text-[#1A1A1A]">
                     LKR {prod.price.toLocaleString()}
                   </td>
-                  <td className="py-4 px-6">
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleAdjustStock(prod, -1)}
-                        className="w-7 h-7 rounded-lg border border-[#1A1A1A]/15 bg-white flex items-center justify-center hover:bg-[#FAF8F5] text-[#1A1A1A]/70 hover:text-[#1A1A1A] transition-colors cursor-pointer"
-                        title="Reduce stock by 1"
-                      >
-                        <Minus className="w-3 h-3" />
-                      </button>
-                      <span className="font-semibold text-[#1A1A1A] min-w-[2.5rem] text-center">
-                        {prod.stock}
-                      </span>
-                      <button
-                        onClick={() => handleAdjustStock(prod, 1)}
-                        className="w-7 h-7 rounded-lg border border-[#1A1A1A]/15 bg-white flex items-center justify-center hover:bg-[#FAF8F5] text-[#1A1A1A]/70 hover:text-[#1A1A1A] transition-colors cursor-pointer"
-                        title="Add 1 unit"
-                      >
-                        <Plus className="w-3 h-3" />
-                      </button>
-                      <span className="text-[10px] text-[#1A1A1A]/40 ml-1">Min: {prod.lowStockThreshold}</span>
-                    </div>
+                  <td className="py-4 px-6 text-[#1A1A1A]/70">
+                    ★ {prod.rating.toFixed(1)} ({prod.reviewCount} reviews)
                   </td>
                   <td className="py-4 px-6">
-                    <Badge
-                      variant={
-                        prod.stock === 0
-                          ? 'dark'
-                          : prod.stock <= prod.lowStockThreshold
-                          ? 'terracotta'
-                          : 'sage'
-                      }
-                      size="xs"
+                    <select
+                      value={prod.status}
+                      onChange={(e) => handleUpdateStatus(prod, e.target.value as 'In Stock' | 'Low Stock' | 'Out of Stock')}
+                      className="px-2.5 py-1 rounded-xl bg-[#FAF8F5] border border-[#1A1A1A]/10 text-xs font-medium text-[#1A1A1A] outline-none cursor-pointer"
                     >
-                      {prod.stock === 0 ? 'Out of Stock' : prod.stock <= prod.lowStockThreshold ? 'Low Stock' : 'In Stock'}
-                    </Badge>
+                      <option value="In Stock">In Stock</option>
+                      <option value="Low Stock">Low Stock</option>
+                      <option value="Out of Stock">Out of Stock</option>
+                    </select>
                   </td>
                   <td className="py-4 px-6 text-right">
                     <div className="flex items-center justify-end gap-2">
@@ -382,26 +353,18 @@ export default function AdminProductsPage() {
         maxWidth="lg"
       >
         <form onSubmit={handleSaveProduct} className="space-y-4 text-xs">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Input
-              label="Formulation Name"
-              required
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Velvet Botanical Elixir"
-            />
-            <Input
-              label="Subtitle / Active Note"
-              value={subtitle}
-              onChange={(e) => setSubtitle(e.target.value)}
-              placeholder="e.g. 10% Niacinamide + Ceylon Green Tea"
-            />
-          </div>
+          <Input
+            label="Formulation Name *"
+            required
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="e.g. Velvet Glow Serum"
+          />
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="text-[10px] uppercase tracking-wider font-semibold text-[#1A1A1A]/60 block mb-1">
-                Category
+                Category *
               </label>
               <select
                 value={category}
@@ -415,11 +378,21 @@ export default function AdminProductsPage() {
             </div>
 
             <Input
-              label="SKU Code"
+              label="Subcategory"
+              value={subcategory}
+              onChange={(e) => setSubcategory(e.target.value)}
+              placeholder="e.g. Serums, Moisturizers"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <Input
+              label="Retail Price (LKR) *"
+              type="number"
               required
-              value={sku}
-              onChange={(e) => setSku(e.target.value)}
-              placeholder="VEL-SER-001"
+              min={0}
+              value={price}
+              onChange={(e) => setPrice(Number(e.target.value))}
             />
 
             <Input
@@ -429,37 +402,21 @@ export default function AdminProductsPage() {
               onChange={(e) => setSize(e.target.value)}
               placeholder="30ml / 50ml"
             />
-          </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-            <Input
-              label="Retail Price (LKR)"
-              type="number"
-              required
-              value={price}
-              onChange={(e) => setPrice(Number(e.target.value))}
-            />
-            <Input
-              label="Original Price (Optional)"
-              type="number"
-              value={originalPrice || ''}
-              onChange={(e) => setOriginalPrice(e.target.value ? Number(e.target.value) : undefined)}
-              placeholder="For discounts"
-            />
-            <Input
-              label="Available Stock"
-              type="number"
-              required
-              value={stock}
-              onChange={(e) => setStock(Number(e.target.value))}
-            />
-            <Input
-              label="Reorder Alert Threshold"
-              type="number"
-              required
-              value={lowStockThreshold}
-              onChange={(e) => setLowStockThreshold(Number(e.target.value))}
-            />
+            <div>
+              <label className="text-[10px] uppercase tracking-wider font-semibold text-[#1A1A1A]/60 block mb-1">
+                Status
+              </label>
+              <select
+                value={status}
+                onChange={(e) => setStatus(e.target.value as 'In Stock' | 'Low Stock' | 'Out of Stock')}
+                className="w-full p-2.5 rounded-xl bg-[#FAF8F5] border border-[#1A1A1A]/10 text-xs text-[#1A1A1A] outline-none focus:border-[#C87D55]"
+              >
+                <option value="In Stock">In Stock</option>
+                <option value="Low Stock">Low Stock</option>
+                <option value="Out of Stock">Out of Stock</option>
+              </select>
+            </div>
           </div>
 
           <Input
@@ -471,13 +428,56 @@ export default function AdminProductsPage() {
 
           <div className="space-y-1">
             <label className="text-[10px] uppercase tracking-wider font-semibold text-[#1A1A1A]/60 block">
-              Formulation Description
+              Short Description *
+            </label>
+            <textarea
+              required
+              rows={2}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Short summary of the product formulation..."
+              className="w-full p-3 rounded-2xl bg-[#FAF8F5] border border-[#1A1A1A]/10 text-xs text-[#1A1A1A] outline-none focus:border-[#C87D55]"
+            />
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-[10px] uppercase tracking-wider font-semibold text-[#1A1A1A]/60 block">
+              Long Formulation & Science Description
             </label>
             <textarea
               rows={3}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Describe the sensory ritual and botanical benefits..."
+              value={longDescription}
+              onChange={(e) => setLongDescription(e.target.value)}
+              placeholder="In-depth clinical formulation details, molecular weights, and mechanisms..."
+              className="w-full p-3 rounded-2xl bg-[#FAF8F5] border border-[#1A1A1A]/10 text-xs text-[#1A1A1A] outline-none focus:border-[#C87D55]"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Input
+              label="How To Use (The Ritual)"
+              value={howToUse}
+              onChange={(e) => setHowToUse(e.target.value)}
+              placeholder="e.g. Dispense 3-4 drops onto cleansed skin..."
+            />
+
+            <Input
+              label="Skin Types (Comma separated)"
+              value={skinTypesText}
+              onChange={(e) => setSkinTypesText(e.target.value)}
+              placeholder="All Skin Types, Dry, Sensitive"
+            />
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-[10px] uppercase tracking-wider font-semibold text-[#1A1A1A]/60 block">
+              Ingredients List (Comma separated)
+            </label>
+            <textarea
+              rows={2}
+              value={ingredientsText}
+              onChange={(e) => setIngredientsText(e.target.value)}
+              placeholder="Aqua, Niacinamide, Sodium Hyaluronate, Camellia Sinensis..."
               className="w-full p-3 rounded-2xl bg-[#FAF8F5] border border-[#1A1A1A]/10 text-xs text-[#1A1A1A] outline-none focus:border-[#C87D55]"
             />
           </div>

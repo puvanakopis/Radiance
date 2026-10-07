@@ -1,9 +1,8 @@
 import React from 'react';
-import { ProductBadge } from '../../types';
 
 interface BadgeProps {
   children?: React.ReactNode;
-  badge?: ProductBadge | string;
+  badge?: string;
   variant?: 'dark' | 'sage' | 'terracotta' | 'ivory' | 'outline' | 'rose';
   size?: 'xs' | 'sm' | 'md';
   className?: string;

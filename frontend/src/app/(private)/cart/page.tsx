@@ -87,9 +87,9 @@ export default function CartPage() {
               <div key={item.id} className="py-6 grid grid-cols-1 sm:grid-cols-12 gap-4 items-center">
                 {/* Product details */}
                 <div className="sm:col-span-6 flex items-center gap-4">
-                  <Link href={`/products/${item.product.slug}`} className="shrink-0">
+                  <Link href={`/products/${item.product.id}`} className="shrink-0">
                     <img
-                      src={item.product.images[0]}
+                      src={item.product.image}
                       alt={item.product.name}
                       className="w-20 h-24 object-cover rounded-2xl bg-[#EAE3D9]/40 border border-[#1A1A1A]/5"
                     />
@@ -99,7 +99,7 @@ export default function CartPage() {
                       {item.product.category}
                     </span>
                     <Link
-                      href={`/products/${item.product.slug}`}
+                      href={`/products/${item.product.id}`}
                       className="font-serif text-base text-[#1A1A1A] hover:text-[#C87D55] transition-colors block font-medium"
                     >
                       {item.product.name}

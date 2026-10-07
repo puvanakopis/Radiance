@@ -24,7 +24,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   const { isInWishlist, toggleWishlist } = useWishlist();
 
   const isSaved = isInWishlist(product.id);
-  const productImage = product.images[0];
+  const productImage = product.image;
 
   const handleQuickAdd = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -51,7 +51,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       <div className="double-bezel-inner flex flex-col h-full p-2.5 bg-white relative overflow-hidden">
         {/* Single Image Frame */}
         <div className="relative aspect-[4/5] rounded-[calc(1.75rem-0.75rem)] overflow-hidden bg-[#FAF8F5]">
-          <Link href={`/products/${product.slug}`} className="block w-full h-full">
+          <Link href={`/products/${product.id}`} className="block w-full h-full">
             <img
               src={productImage}
               alt={product.name}
@@ -60,14 +60,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             />
           </Link>
 
-          {/* Badges */}
+          {/* Status Indicator Badges */}
           <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-10">
-            {product.badge && <Badge badge={product.badge} size="xs" />}
-            {product.isFeatured && !product.badge && (
-              <span className="px-2.5 py-1 rounded-full text-[9px] uppercase tracking-wider font-semibold bg-[#1A1A1A] text-[#FAF8F5]">
-                Featured
-              </span>
-            )}
+            {product.status === 'Low Stock' && <Badge variant="terracotta" size="xs">Low Stock</Badge>}
+            {product.status === 'Out of Stock' && <Badge variant="dark" size="xs">Sold Out</Badge>}
           </div>
 
           {/* Top-right Wishlist Button */}
@@ -97,7 +93,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
             <button
               onClick={handleQuickAdd}
-              disabled={product.stock <= 0}
+              disabled={product.status === 'Out of Stock'}
               className="py-2 px-3 rounded-xl bg-[#1A1A1A] text-[#FAF8F5] text-xs font-medium uppercase tracking-wider hover:bg-[#C87D55] transition-colors flex items-center justify-center gap-1.5 shadow-md disabled:opacity-50"
             >
               {isAdded ? (
@@ -125,17 +121,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               <Rating rating={product.rating} reviewCount={product.reviewCount} size="xs" />
             </div>
 
-            <Link href={`/products/${product.slug}`} className="block group-hover:text-[#C87D55] transition-colors">
+            <Link href={`/products/${product.id}`} className="block group-hover:text-[#C87D55] transition-colors">
               <h3 className="font-serif text-base font-normal text-[#1A1A1A] line-clamp-1 leading-snug">
                 {product.name}
               </h3>
             </Link>
-
-            {product.subtitle && (
-              <p className="text-[11px] text-[#1A1A1A]/60 line-clamp-1 mt-0.5 font-light">
-                {product.subtitle}
-              </p>
-            )}
           </div>
 
           {/* Pricing & Mobile Quick Add */}
@@ -144,17 +134,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               <span className="font-medium text-xs text-[#1A1A1A]">
                 LKR {product.price.toLocaleString()}
               </span>
-              {product.originalPrice && (
-                <span className="text-[10px] text-[#1A1A1A]/40 line-through">
-                  LKR {product.originalPrice.toLocaleString()}
-                </span>
-              )}
             </div>
 
             {/* Mobile Add to Cart button */}
             <button
               onClick={handleQuickAdd}
-              disabled={product.stock <= 0}
+              disabled={product.status === 'Out of Stock'}
               className="sm:hidden w-8 h-8 rounded-full bg-[#1A1A1A] text-white flex items-center justify-center hover:bg-[#C87D55] transition-colors active:scale-95 disabled:opacity-50"
               aria-label="Add to bag"
             >

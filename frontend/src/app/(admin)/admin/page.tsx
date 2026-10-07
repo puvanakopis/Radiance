@@ -201,7 +201,7 @@ export default function AdminDashboardPage() {
             {stats.topProducts.map(({ product, unitsSold, revenue }) => (
               <div key={product.id} className="py-3 flex items-center gap-3 text-xs">
                 <img
-                  src={product.images?.[0] || 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=800&q=80'}
+                  src={product.image || 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=800&q=80'}
                   alt={product.name}
                   className="w-10 h-12 object-cover rounded-lg bg-[#EAE3D9]/40 shrink-0"
                 />
