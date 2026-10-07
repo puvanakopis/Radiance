@@ -192,3 +192,4 @@ export function validateUpdateProduct(req, res, next) {
 
   next();
 }
+

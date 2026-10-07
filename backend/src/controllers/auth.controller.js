@@ -1,9 +1,41 @@
 import bcrypt from 'bcryptjs';
-import { UserModel } from '../models/user.model.js';
+import { CustomerModel } from '../models/customer.model.js';
+import { AdminModel } from '../models/admin.model.js';
 import { OtpVerificationModel } from '../models/otp.model.js';
 import { signToken } from '../utils/jwt.js';
 import { AppError } from '../middleware/error.middleware.js';
 import { sendOtpEmail } from '../utils/email.js';
+
+// Helper to look up an account by email across Admin and Customer collections
+async function findAccountByEmail(email) {
+  const admin = await AdminModel.findOne({ email });
+  if (admin) return { account: admin, role: 'ADMIN', model: AdminModel };
+
+  const customer = await CustomerModel.findOne({ email });
+  if (customer) return { account: customer, role: 'CUSTOMER', model: CustomerModel };
+
+  return null;
+}
+
+// Helper to look up an account by ID across Admin and Customer collections
+async function findAccountById(id, rolePreference) {
+  if (rolePreference === 'ADMIN') {
+    const admin = await AdminModel.findById(id);
+    if (admin) return { account: admin, role: 'ADMIN', model: AdminModel };
+  } else if (rolePreference === 'CUSTOMER') {
+    const customer = await CustomerModel.findById(id);
+    if (customer) return { account: customer, role: 'CUSTOMER', model: CustomerModel };
+  }
+
+  // Fallback search if preference wasn't provided or didn't match
+  const admin = await AdminModel.findById(id);
+  if (admin) return { account: admin, role: 'ADMIN', model: AdminModel };
+
+  const customer = await CustomerModel.findById(id);
+  if (customer) return { account: customer, role: 'CUSTOMER', model: CustomerModel };
+
+  return null;
+}
 
 // Helper to remove sensitive password hash and format safe user response
 function sanitizeUser(userDoc) {
@@ -25,13 +57,14 @@ function sanitizeUser(userDoc) {
     city: safeUser.city || undefined,
     district: safeUser.district || undefined,
     avatar: safeUser.avatar || undefined,
+    permissions: safeUser.permissions || undefined,
     is_active: safeUser.isActive ?? true,
     created_at: safeUser.createdAt?.toISOString?.() || safeUser.createdAt,
     updated_at: safeUser.updatedAt?.toISOString?.() || safeUser.updatedAt,
   };
 }
 
-// Public: Request Registration OTP (Stores pending user data & sends OTP)
+// Public: Request Registration OTP (Stores pending customer data & sends OTP)
 export async function sendRegistrationOtp(req, res, next) {
   try {
     const { firstName, lastName, name, email, phone, phoneNumber, password, address, city, district } = req.body;
@@ -41,8 +74,8 @@ export async function sendRegistrationOtp(req, res, next) {
     const fullName = `${fName} ${lName}`.trim();
     const cleanPhone = (phone || phoneNumber || '')?.trim() || null;
 
-    // Check if user is already registered
-    const existing = await UserModel.findOne({ email: normalizedEmail });
+    // Check if account already exists in Admin or Customer collections
+    const existing = await findAccountByEmail(normalizedEmail);
 
     if (existing) {
       throw new AppError('An account with this email address already exists. Please sign in instead.', 409);
@@ -62,7 +95,7 @@ export async function sendRegistrationOtp(req, res, next) {
       purpose: 'REGISTRATION',
     });
 
-    // Save new OTP record with pending user registration payload
+    // Save new OTP record with pending customer registration payload
     await OtpVerificationModel.create({
       email: normalizedEmail,
       otpHash,
@@ -107,8 +140,8 @@ export async function resendRegistrationOtp(req, res, next) {
     const { email } = req.body;
     const normalizedEmail = email.toLowerCase().trim();
 
-    // Check if user is already registered
-    const existing = await UserModel.findOne({ email: normalizedEmail });
+    // Check if account already exists
+    const existing = await findAccountByEmail(normalizedEmail);
 
     if (existing) {
       throw new AppError('An account with this email address already exists. Please sign in instead.', 409);
@@ -168,7 +201,7 @@ export async function resendRegistrationOtp(req, res, next) {
   }
 }
 
-// Public: Verify Registration OTP (Verifies OTP & saves user to database)
+// Public: Verify Registration OTP (Verifies OTP & saves customer to Customer table)
 export async function verifyRegistrationOtp(req, res, next) {
   try {
     const { email, otp } = req.body;
@@ -197,10 +230,10 @@ export async function verifyRegistrationOtp(req, res, next) {
       throw new AppError('The verification code entered is incorrect. Please try again.', 400);
     }
 
-    // Check if user is already registered in the meantime
-    const existingUser = await UserModel.findOne({ email: normalizedEmail });
+    // Check if account is already registered
+    const existing = await findAccountByEmail(normalizedEmail);
 
-    if (existingUser) {
+    if (existing) {
       throw new AppError('An account with this email address already exists. Please sign in.', 409);
     }
 
@@ -212,8 +245,8 @@ export async function verifyRegistrationOtp(req, res, next) {
     const firstName = (payload.firstName || payload.name?.split(' ')?.[0] || 'Customer').trim();
     const lastName = (payload.lastName || payload.name?.split(' ')?.slice(1).join(' ') || '').trim();
 
-    // Persist new user in database
-    const user = await UserModel.create({
+    // Persist new customer in Customer collection
+    const customer = await CustomerModel.create({
       firstName,
       lastName,
       email: normalizedEmail,
@@ -234,12 +267,12 @@ export async function verifyRegistrationOtp(req, res, next) {
 
     // Generate JWT token for auto-login
     const token = signToken({
-      userId: user.id || user._id.toString(),
-      email: user.email,
-      role: user.role,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      name: `${user.firstName} ${user.lastName}`.trim(),
+      userId: customer.id || customer._id.toString(),
+      email: customer.email,
+      role: customer.role,
+      firstName: customer.firstName,
+      lastName: customer.lastName,
+      name: `${customer.firstName} ${customer.lastName}`.trim(),
     });
 
     res.status(201).json({
@@ -247,7 +280,7 @@ export async function verifyRegistrationOtp(req, res, next) {
       message: 'Account successfully verified and registered.',
       data: {
         token,
-        user: sanitizeUser(user),
+        user: sanitizeUser(customer),
       },
     });
   } catch (err) {
@@ -261,12 +294,14 @@ export async function sendForgotPasswordOtp(req, res, next) {
     const { email } = req.body;
     const normalizedEmail = email.toLowerCase().trim();
 
-    // Verify account exists
-    const user = await UserModel.findOne({ email: normalizedEmail });
+    // Verify account exists in Admin or Customer table
+    const result = await findAccountByEmail(normalizedEmail);
 
-    if (!user) {
+    if (!result || !result.account) {
       throw new AppError('No account found with this email address.', 404);
     }
+
+    const user = result.account;
 
     if (!user.isActive) {
       throw new AppError('This account has been deactivated. Please contact support.', 403);
@@ -291,7 +326,7 @@ export async function sendForgotPasswordOtp(req, res, next) {
       expiresAt,
     });
 
-    const userFullName = `${user.firstName} ${user.lastName}`.trim() || 'Valued Client';
+    const userFullName = `${user.firstName} ${user.lastName}`.trim() || 'Valued User';
 
     // Send password reset email
     await sendOtpEmail({
@@ -350,11 +385,13 @@ export async function verifyForgotPasswordOtp(req, res, next) {
       throw new AppError('The verification code entered is incorrect. Please try again.', 400);
     }
 
-    const user = await UserModel.findOne({ email: normalizedEmail });
+    const result = await findAccountByEmail(normalizedEmail);
 
-    if (!user) {
+    if (!result || !result.account) {
       throw new AppError('User not found.', 404);
     }
+
+    const user = result.account;
 
     // If a new password is provided, reset the password immediately
     if (targetNewPassword) {
@@ -395,17 +432,20 @@ export async function verifyForgotPasswordOtp(req, res, next) {
   }
 }
 
-// Public: Login (Customers & Admins)
+// Public: Unified Login (Handles both Admin and Customer tables)
 export async function login(req, res, next) {
   try {
     const { email, password } = req.body;
     const normalizedEmail = email.toLowerCase().trim();
 
-    const user = await UserModel.findOne({ email: normalizedEmail });
+    // Look for account in Admin or Customer collections
+    const result = await findAccountByEmail(normalizedEmail);
 
-    if (!user) {
+    if (!result || !result.account) {
       throw new AppError('Invalid email or password.', 401);
     }
+
+    const user = result.account;
 
     if (!user.isActive) {
       throw new AppError('This account has been deactivated. Please contact support.', 403);
@@ -419,7 +459,7 @@ export async function login(req, res, next) {
     const token = signToken({
       userId: user.id || user._id.toString(),
       email: user.email,
-      role: user.role,
+      role: user.role || result.role,
       firstName: user.firstName,
       lastName: user.lastName,
       name: `${user.firstName} ${user.lastName}`.trim(),
@@ -438,7 +478,7 @@ export async function login(req, res, next) {
   }
 }
 
-// Authenticated: Get Current User Profile
+// Authenticated: Get Current User Profile (Admin or Customer)
 export async function getMe(req, res, next) {
   try {
     if (!req.user) {
@@ -446,22 +486,22 @@ export async function getMe(req, res, next) {
       return;
     }
 
-    const user = await UserModel.findById(req.user.userId);
+    const result = await findAccountById(req.user.userId, req.user.role);
 
-    if (!user) {
+    if (!result || !result.account) {
       throw new AppError('User not found.', 404);
     }
 
     res.status(200).json({
       success: true,
-      data: sanitizeUser(user),
+      data: sanitizeUser(result.account),
     });
   } catch (err) {
     next(err);
   }
 }
 
-// Authenticated: Update Profile
+// Authenticated: Update Profile (Admin or Customer)
 export async function updateProfile(req, res, next) {
   try {
     if (!req.user) {
@@ -484,7 +524,12 @@ export async function updateProfile(req, res, next) {
     if (district !== undefined) updateData.district = district.trim();
     if (avatar !== undefined) updateData.avatar = avatar.trim();
 
-    const updatedUser = await UserModel.findByIdAndUpdate(req.user.userId, { $set: updateData }, { new: true });
+    const result = await findAccountById(req.user.userId, req.user.role);
+    if (!result || !result.model) {
+      throw new AppError('User not found.', 404);
+    }
+
+    const updatedUser = await result.model.findByIdAndUpdate(req.user.userId, { $set: updateData }, { new: true });
 
     if (!updatedUser) {
       throw new AppError('User not found.', 404);
@@ -500,7 +545,7 @@ export async function updateProfile(req, res, next) {
   }
 }
 
-// Authenticated: Change Password
+// Authenticated: Change Password (Admin or Customer)
 export async function changePassword(req, res, next) {
   try {
     if (!req.user) {
@@ -509,11 +554,13 @@ export async function changePassword(req, res, next) {
     }
 
     const { currentPassword, newPassword } = req.body;
-    const user = await UserModel.findById(req.user.userId);
+    const result = await findAccountById(req.user.userId, req.user.role);
 
-    if (!user) {
+    if (!result || !result.account) {
       throw new AppError('User not found.', 404);
     }
+
+    const user = result.account;
 
     const isMatch = await bcrypt.compare(currentPassword, user.passwordHash);
     if (!isMatch) {

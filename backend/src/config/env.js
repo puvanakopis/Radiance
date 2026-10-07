@@ -38,4 +38,11 @@ export const ENV = {
   SMTP_PASS: process.env.SMTP_PASS || '',
   SMTP_SECURE: process.env.SMTP_SECURE === 'true',
   SMTP_FROM: process.env.SMTP_FROM || '"Skinova Botanical Skincare" <noreply@skinova.lk>',
+
+  // Initial Admin Credentials
+  ADMIN_EMAIL: process.env.ADMIN_EMAIL || 'admin@skinova.com',
+  ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || 'Admin@123456',
+  ADMIN_FIRST_NAME: process.env.ADMIN_FIRST_NAME || 'Master',
+  ADMIN_LAST_NAME: process.env.ADMIN_LAST_NAME || 'Admin',
 };
+

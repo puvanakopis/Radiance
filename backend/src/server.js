@@ -5,6 +5,7 @@ import { connectDB, disconnectDB } from './config/db.js';
 import { errorHandler } from './middleware/error.middleware.js';
 import authRoutes from './routes/auth.routes.js';
 import productRoutes from './routes/product.routes.js';
+import customerRoutes from './routes/customer.routes.js';
 
 export const app = express();
 
@@ -33,6 +34,7 @@ const apiRouter = Router();
 // Routes
 apiRouter.use('/auth', authRoutes);
 apiRouter.use('/products', productRoutes);
+apiRouter.use('/customers', customerRoutes);
 
 // Health check endpoint
 apiRouter.get('/health', (req, res) => {
@@ -51,6 +53,7 @@ app.get('/', (req, res) => {
     endpoints: {
       auth: '/api/auth',
       products: '/api/products',
+      customers: '/api/customers',
       health: '/api/health',
     },
   });
