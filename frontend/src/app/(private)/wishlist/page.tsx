@@ -11,7 +11,7 @@ import { useWishlist } from '@/context/WishlistContext';
 import { Product } from '@/types';
 
 export default function WishlistPage() {
-  const { items, totalWishlist, clearWishlist } = useWishlist();
+  const { items, totalWishlist, clearWishlist, isLoading } = useWishlist();
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
 
   return (
@@ -65,8 +65,18 @@ export default function WishlistPage() {
           )}
         </div>
 
-        {/* Empty State */}
-        {items.length === 0 ? (
+        {/* Loading / Empty / Grid State */}
+        {isLoading && items.length === 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="bg-white border border-[#1A1A1A]/10 rounded-3xl p-4 h-80 animate-pulse space-y-4">
+                <div className="bg-[#EAE3D9]/50 rounded-2xl h-48 w-full" />
+                <div className="h-4 bg-[#EAE3D9]/50 rounded w-3/4" />
+                <div className="h-3 bg-[#EAE3D9]/30 rounded w-1/2" />
+              </div>
+            ))}
+          </div>
+        ) : items.length === 0 ? (
           <div className="bg-white border border-[#1A1A1A]/10 rounded-3xl p-12 text-center space-y-4 shadow-xs">
             <div className="w-12 h-12 rounded-full bg-[#EAE3D9]/60 flex items-center justify-center mx-auto text-[#1A1A1A]/50">
               <Heart className="w-6 h-6" />
