@@ -60,10 +60,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             />
           </Link>
 
-          {/* Status Indicator Badges */}
+          {/* Stock Indicator Badges */}
           <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-10">
-            {product.status === 'Low Stock' && <Badge variant="terracotta" size="xs">Low Stock</Badge>}
-            {product.status === 'Out of Stock' && <Badge variant="dark" size="xs">Sold Out</Badge>}
+            {product.stock <= 0 && <Badge variant="dark" size="xs">Sold Out</Badge>}
           </div>
 
           {/* Top-right Wishlist Button */}
@@ -93,7 +92,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
             <button
               onClick={handleQuickAdd}
-              disabled={product.status === 'Out of Stock'}
+              disabled={product.stock <= 0}
               className="py-2 px-3 rounded-xl bg-[#1A1A1A] text-[#FAF8F5] text-xs font-medium uppercase tracking-wider hover:bg-[#C87D55] transition-colors flex items-center justify-center gap-1.5 shadow-md disabled:opacity-50"
             >
               {isAdded ? (
@@ -139,7 +138,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             {/* Mobile Add to Cart button */}
             <button
               onClick={handleQuickAdd}
-              disabled={product.status === 'Out of Stock'}
+              disabled={product.stock <= 0}
               className="sm:hidden w-8 h-8 rounded-full bg-[#1A1A1A] text-white flex items-center justify-center hover:bg-[#C87D55] transition-colors active:scale-95 disabled:opacity-50"
               aria-label="Add to bag"
             >

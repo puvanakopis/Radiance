@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { ArrowRight, Flower2 } from 'lucide-react';
-import { mockCategories } from '../../data/mockProducts';
+import { CATEGORIES_METADATA } from '@/data/categories';
 
 interface MegaMenuProps {
   isOpen: boolean;
@@ -21,7 +21,7 @@ export const MegaMenu: React.FC<MegaMenuProps> = ({ isOpen, onClose }) => {
       <div className="max-w-7xl mx-auto grid grid-cols-12 gap-8">
         {/* Categories columns */}
         <div className="col-span-8 grid grid-cols-3 gap-8">
-          {mockCategories.slice(0, 3).map((category) => (
+          {CATEGORIES_METADATA.slice(0, 3).map((category) => (
             <div key={category.id} className="space-y-4">
               <Link
                 href={`/products?category=${encodeURIComponent(category.name)}`}

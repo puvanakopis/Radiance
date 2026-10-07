@@ -4,11 +4,11 @@ import React from 'react';
 import { Star } from 'lucide-react';
 
 interface RatingProps {
-  value?: number;
-  rating?: number;
+  value?: number | null;
+  rating?: number | null;
   max?: number;
-  count?: number;
-  reviewCount?: number;
+  count?: number | null;
+  reviewCount?: number | null;
   showText?: boolean;
   showNumber?: boolean;
   size?: 'xs' | 'sm' | 'md';
@@ -30,7 +30,8 @@ export const Rating: React.FC<RatingProps> = ({
   onChange,
   className = '',
 }) => {
-  const currentRating = value ?? rating ?? 5;
+  const hasRating = (value !== undefined && value !== null) || (rating !== undefined && rating !== null);
+  const currentRating = hasRating ? Number(value ?? rating) : null;
   const currentCount = count ?? reviewCount;
   const shouldShowText = showText ?? showNumber ?? true;
 
@@ -44,7 +45,7 @@ export const Rating: React.FC<RatingProps> = ({
     <div className={`inline-flex items-center gap-1.5 ${className}`}>
       <div className="flex items-center gap-0.5">
         {Array.from({ length: max }).map((_, i) => {
-          const filled = i + 1 <= Math.round(currentRating);
+          const filled = currentRating !== null && i + 1 <= Math.round(currentRating);
           return (
             <button
               key={i}
@@ -67,8 +68,8 @@ export const Rating: React.FC<RatingProps> = ({
 
       {shouldShowText && (
         <span className="text-xs text-[#1A1A1A]/70 font-medium tracking-tight">
-          {currentRating.toFixed(1)}
-          {currentCount !== undefined && (
+          {currentRating !== null ? currentRating.toFixed(1) : 'New'}
+          {currentCount !== undefined && currentCount !== null && currentCount > 0 && (
             <span className="text-[#1A1A1A]/40 font-normal ml-1">({currentCount})</span>
           )}
         </span>

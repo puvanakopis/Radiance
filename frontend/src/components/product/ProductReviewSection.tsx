@@ -9,14 +9,15 @@ import { Input } from '../ui/Input';
 import { Badge } from '../ui/Badge';
 import { CheckCircle2, ThumbsUp, PenLine } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
+import { useAuth } from '../../context/AuthContext';
 
 interface ProductReviewSectionProps {
   productId: string;
   productName: string;
   reviews: Review[];
-  rating: number;
-  reviewCount: number;
-  onAddReview: (review: Omit<Review, 'id' | 'date' | 'helpfulCount'>) => void;
+  rating?: number | null;
+  reviewCount?: number | null;
+  onAddReview: (review: { productId: string; rating: number; feedback: string; userName?: string }) => Promise<void> | void;
 }
 
 export const ProductReviewSection: React.FC<ProductReviewSectionProps> = ({
@@ -27,45 +28,62 @@ export const ProductReviewSection: React.FC<ProductReviewSectionProps> = ({
   reviewCount,
   onAddReview,
 }) => {
+  const { user } = useAuth();
   const [isWriteModalOpen, setIsWriteModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [newRating, setNewRating] = useState(5);
-  const [name, setName] = useState('');
-  const [location, setLocation] = useState('');
-  const [title, setTitle] = useState('');
-  const [comment, setComment] = useState('');
-  const [skinType, setSkinType] = useState<SkinType>('Combination');
+  const [feedback, setFeedback] = useState('');
   const [helpfulClicked, setHelpfulClicked] = useState<Record<string, boolean>>({});
 
   const { showToast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleOpenWriteModal = () => {
+    setFeedback('');
+    setNewRating(5);
+    setIsWriteModalOpen(true);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !title || !comment) {
-      showToast({ type: 'error', title: 'Please complete all required fields' });
+    if (!feedback.trim()) {
+      showToast({ type: 'error', title: 'Please provide your feedback' });
       return;
     }
 
-    onAddReview({
-      productId,
-      userName: name,
-      userLocation: location || 'Sri Lanka',
-      rating: newRating,
-      title,
-      comment,
-      verified: true,
-      skinType,
-    });
+    if (!user) {
+      showToast({
+        type: 'info',
+        title: 'Sign In Required',
+        message: 'Please sign in to your Skinova account to share your verified experience.',
+      });
+      return;
+    }
 
-    setIsWriteModalOpen(false);
-    setName('');
-    setLocation('');
-    setTitle('');
-    setComment('');
-    showToast({
-      type: 'success',
-      title: 'Review submitted',
-      message: 'Thank you for sharing your experience with the Skinova community.',
-    });
+    setIsSubmitting(true);
+    try {
+      await onAddReview({
+        productId,
+        rating: newRating,
+        feedback: feedback.trim(),
+        userName: user.name || user.email || 'Verified Patron',
+      });
+
+      setIsWriteModalOpen(false);
+      setFeedback('');
+      showToast({
+        type: 'success',
+        title: 'Experience Shared Successfully',
+        message: 'Your formulation feedback has been published.',
+      });
+    } catch (err: any) {
+      showToast({
+        type: 'error',
+        title: 'Submission Failed',
+        message: err?.message || 'Unable to submit review. Please try again.',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleHelpful = (reviewId: string) => {
@@ -79,9 +97,11 @@ export const ProductReviewSection: React.FC<ProductReviewSectionProps> = ({
   };
 
   // Rating Distribution breakdown
+  const validReviews = Array.isArray(reviews) ? reviews : [];
+  const validReviewCount = reviewCount || validReviews.length || 0;
   const ratingCounts = [5, 4, 3, 2, 1].map((star) => {
-    const count = reviews.filter((r) => Math.round(r.rating) === star).length;
-    const percentage = reviewCount > 0 ? Math.round((count / reviewCount) * 100) : star === 5 ? 85 : 15;
+    const count = validReviews.filter((r) => Math.round(r.rating) === star).length;
+    const percentage = validReviewCount > 0 ? Math.round((count / validReviewCount) * 100) : 0;
     return { star, count, percentage };
   });
 
@@ -92,13 +112,15 @@ export const ProductReviewSection: React.FC<ProductReviewSectionProps> = ({
         {/* Overall Rating score */}
         <div className="md:col-span-4 text-center md:border-r border-[#1A1A1A]/10 md:pr-6">
           <span className="font-serif text-5xl sm:text-6xl text-[#1A1A1A] block font-medium">
-            {rating.toFixed(1)}
+            {rating !== null && rating !== undefined ? Number(rating).toFixed(1) : '—'}
           </span>
           <div className="flex justify-center my-2">
             <Rating rating={rating} size="md" showNumber={false} />
           </div>
           <p className="text-xs uppercase tracking-widest text-[#1A1A1A]/60">
-            Based on {reviewCount} verified reviews
+            {validReviewCount > 0
+              ? `Based on ${validReviewCount} verified reviews`
+              : 'Be the first to review this formulation'}
           </p>
         </div>
 
@@ -124,10 +146,10 @@ export const ProductReviewSection: React.FC<ProductReviewSectionProps> = ({
             variant="outline"
             size="md"
             icon={PenLine}
-            onClick={() => setIsWriteModalOpen(true)}
+            onClick={handleOpenWriteModal}
             className="w-full md:w-auto"
           >
-            Write Review
+            Share Experience
           </Button>
         </div>
       </div>
@@ -145,20 +167,15 @@ export const ProductReviewSection: React.FC<ProductReviewSectionProps> = ({
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-full bg-[#EAE3D9] text-[#1A1A1A] font-serif font-semibold text-sm flex items-center justify-center">
-                      {rev.userName[0]}
+                      {(rev.userName || 'P')[0]?.toUpperCase()}
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-semibold text-[#1A1A1A]">{rev.userName}</span>
-                        {rev.verified && (
-                          <span className="inline-flex items-center gap-1 text-[10px] text-[#8A9A86] font-medium uppercase tracking-wider">
-                            <CheckCircle2 className="w-3 h-3" /> Verified Buyer
-                          </span>
-                        )}
+                        <span className="inline-flex items-center gap-1 text-[10px] text-[#8A9A86] font-medium uppercase tracking-wider">
+                          <CheckCircle2 className="w-3 h-3" /> Verified Patron
+                        </span>
                       </div>
-                      {rev.userLocation && (
-                        <p className="text-[11px] text-[#1A1A1A]/50">{rev.userLocation}</p>
-                      )}
                     </div>
                   </div>
 
@@ -168,14 +185,9 @@ export const ProductReviewSection: React.FC<ProductReviewSectionProps> = ({
                   </div>
                 </div>
 
-                {rev.skinType && (
-                  <Badge variant="ivory" size="xs">
-                    Skin Type: {rev.skinType}
-                  </Badge>
-                )}
-
-                <h5 className="font-serif text-base text-[#1A1A1A] font-medium">{rev.title}</h5>
-                <p className="text-xs sm:text-sm text-[#1A1A1A]/75 leading-relaxed">{rev.comment}</p>
+                <p className="text-xs sm:text-sm text-[#1A1A1A]/80 leading-relaxed font-light">
+                  {rev.comment}
+                </p>
 
                 <div className="pt-2 flex items-center justify-end">
                   <button
@@ -199,7 +211,7 @@ export const ProductReviewSection: React.FC<ProductReviewSectionProps> = ({
         )}
       </div>
 
-      {/* Write a Review Modal */}
+      {/* Share Your Experience Modal (Strictly CustomerReviewSchema) */}
       <Modal
         isOpen={isWriteModalOpen}
         onClose={() => setIsWriteModalOpen(false)}
@@ -207,9 +219,25 @@ export const ProductReviewSection: React.FC<ProductReviewSectionProps> = ({
         subtitle={`Reviewing: ${productName}`}
       >
         <form onSubmit={handleSubmit} className="space-y-5">
+          {/* User Account Info */}
+          {user ? (
+            <div className="p-3 bg-[#FAF8F5] border border-[#1A1A1A]/10 rounded-xl flex items-center justify-between text-xs">
+              <span className="text-[#1A1A1A]/60">Reviewing as:</span>
+              <span className="font-semibold text-[#1A1A1A]">{user.name || user.email}</span>
+            </div>
+          ) : (
+            <div className="p-3 bg-amber-50 border border-amber-200/70 rounded-xl text-xs text-amber-800 flex items-center justify-between">
+              <span>Sign in required to publish your review.</span>
+              <a href="/login" className="underline font-semibold hover:text-amber-900">
+                Sign In →
+              </a>
+            </div>
+          )}
+
+          {/* Overall Rating (1 - 5) */}
           <div>
             <label className="text-xs font-medium uppercase tracking-[0.12em] text-[#1A1A1A]/70 block mb-2">
-              Overall Rating
+              Overall Rating *
             </label>
             <Rating
               rating={newRating}
@@ -220,58 +248,17 @@ export const ProductReviewSection: React.FC<ProductReviewSectionProps> = ({
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Input
-              label="Your Name"
-              required
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Kavindi Perera"
-            />
-            <Input
-              label="Location (City)"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              placeholder="e.g. Colombo 07"
-            />
-          </div>
-
-          <div>
-            <label className="text-xs font-medium uppercase tracking-[0.12em] text-[#1A1A1A]/70 block mb-1.5">
-              Your Skin Type
-            </label>
-            <select
-              value={skinType}
-              onChange={(e) => setSkinType(e.target.value as SkinType)}
-              className="w-full bg-white border border-[#1A1A1A]/15 rounded-xl px-4 py-3 text-sm text-[#1A1A1A] outline-none focus:border-[#1A1A1A]"
-            >
-              <option value="Normal">Normal</option>
-              <option value="Dry">Dry</option>
-              <option value="Combination">Combination</option>
-              <option value="Oily">Oily</option>
-              <option value="Sensitive">Sensitive</option>
-              <option value="All Skin Types">All Skin Types</option>
-            </select>
-          </div>
-
-          <Input
-            label="Review Headline"
-            required
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Summarize your ritual experience..."
-          />
-
+          {/* Feedback Textarea */}
           <div className="space-y-1.5">
             <label className="text-xs font-medium uppercase tracking-[0.12em] text-[#1A1A1A]/70 block">
-              Detailed Feedback *
+              Your Feedback & Experience *
             </label>
             <textarea
               required
               rows={4}
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              placeholder="How did the texture, absorption, and results feel on your skin?"
+              value={feedback}
+              onChange={(e) => setFeedback(e.target.value)}
+              placeholder="Describe the texture, results, absorption, and overall experience with this formulation..."
               className="w-full bg-white border border-[#1A1A1A]/15 rounded-xl p-4 text-sm text-[#1A1A1A] placeholder:text-[#1A1A1A]/35 outline-none focus:border-[#1A1A1A]"
             />
           </div>
@@ -281,12 +268,19 @@ export const ProductReviewSection: React.FC<ProductReviewSectionProps> = ({
               type="button"
               variant="ghost"
               size="md"
+              disabled={isSubmitting}
               onClick={() => setIsWriteModalOpen(false)}
             >
               Cancel
             </Button>
-            <Button type="submit" variant="primary" size="md">
-              Submit Review
+            <Button
+              type="submit"
+              variant="primary"
+              size="md"
+              isLoading={isSubmitting}
+              disabled={isSubmitting}
+            >
+              Submit Feedback
             </Button>
           </div>
         </form>

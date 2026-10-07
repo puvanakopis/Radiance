@@ -9,7 +9,7 @@ import { Drawer } from '@/components/ui/Drawer';
 import { Button } from '@/components/ui/Button';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import { productService } from '@/services/productService';
-import { Product, ProductCategory, SkinType, SkinConcern } from '@/types';
+import { Product, ProductCategory, SkinType } from '@/types';
 
 const CATEGORIES: ProductCategory[] = ['Skincare', 'Haircare', 'Body Care', 'Sun Care', 'Gift Sets'];
 const SKIN_TYPES: SkinType[] = ['All Skin Types', 'Normal', 'Dry', 'Oily', 'Combination', 'Sensitive'];

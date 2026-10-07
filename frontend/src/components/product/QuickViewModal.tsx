@@ -44,8 +44,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({ product, isOpen,
 
         <div className="space-y-4 text-left">
           <div className="flex items-center gap-2">
-            {product.status === 'Low Stock' && <Badge variant="terracotta" size="xs">Low Stock</Badge>}
-            {product.status === 'Out of Stock' && <Badge variant="dark" size="xs">Sold Out</Badge>}
+            {product.stock <= 0 && <Badge variant="dark" size="xs">Sold Out</Badge>}
             <span className="text-[10px] uppercase tracking-wider text-[#1A1A1A]/50 font-medium">
               {product.category}
             </span>
@@ -83,7 +82,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({ product, isOpen,
                   {quantity}
                 </span>
                 <button
-                  onClick={() => setQuantity((q) => q + 1)}
+                  onClick={() => setQuantity((q) => (product.stock > 0 ? Math.min(product.stock, q + 1) : q + 1))}
                   className="w-6 h-6 flex items-center justify-center text-[#1A1A1A]/70 hover:text-[#1A1A1A] cursor-pointer"
                   aria-label="Increase quantity"
                 >
@@ -96,9 +95,9 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({ product, isOpen,
                 size="md"
                 className="flex-1"
                 onClick={handleAddToCart}
-                disabled={product.status === 'Out of Stock'}
+                disabled={product.stock <= 0}
               >
-                {product.status !== 'Out of Stock' ? `Add to Bag • LKR ${(product.price * quantity).toLocaleString()}` : 'Out of Stock'}
+                {product.stock > 0 ? `Add to Bag • LKR ${(product.price * quantity).toLocaleString()}` : 'Out of Stock'}
               </Button>
 
               <button

@@ -26,7 +26,7 @@ export default function AdminLayout({
 
   const navItems = [
     { label: 'Overview', href: '/admin', icon: LayoutDashboard },
-    { label: 'Products & Stock', href: '/admin/products', icon: Package },
+    { label: 'Products', href: '/admin/products', icon: Package },
     { label: 'Orders', href: '/admin/orders', icon: ShoppingBag },
     { label: 'Customers', href: '/admin/customers', icon: Users },
   ];

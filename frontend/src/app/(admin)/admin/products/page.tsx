@@ -16,14 +16,14 @@ import { useToast } from '@/context/ToastContext';
 import { Product, ProductCategory } from '@/types';
 
 const CATEGORIES: ProductCategory[] = ['Skincare', 'Haircare', 'Body Care', 'Sun Care', 'Gift Sets'];
-type StatusFilter = 'All' | 'In Stock' | 'Low Stock' | 'Out of Stock';
+type StockFilter = 'All' | 'In Stock' | 'Out of Stock';
 
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('All');
+  const [stockFilter, setStockFilter] = useState<StockFilter>('All');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
@@ -33,7 +33,7 @@ export default function AdminProductsPage() {
   const [subcategory, setSubcategory] = useState('General');
   const [price, setPrice] = useState(8900);
   const [size, setSize] = useState('50ml');
-  const [status, setStatus] = useState<'In Stock' | 'Low Stock' | 'Out of Stock'>('In Stock');
+  const [stock, setStock] = useState<number>(25);
   const [description, setDescription] = useState('');
   const [longDescription, setLongDescription] = useState('');
   const [howToUse, setHowToUse] = useState('');
@@ -59,19 +59,19 @@ export default function AdminProductsPage() {
     loadProducts();
   }, []);
 
-  const handleUpdateStatus = async (product: Product, newStatus: 'In Stock' | 'Low Stock' | 'Out of Stock') => {
+  const handleUpdateStock = async (product: Product, newStock: number) => {
     try {
       await productService.updateProduct(product.id, {
-        status: newStatus,
+        stock: Math.max(0, newStock),
       });
       showToast({
         type: 'success',
-        title: 'Status Updated',
-        message: `${product.name} status set to ${newStatus}`,
+        title: 'Inventory Updated',
+        message: `${product.name} stock updated to ${Math.max(0, newStock)} units`,
       });
       loadProducts();
     } catch {
-      showToast({ type: 'error', title: 'Could not update status' });
+      showToast({ type: 'error', title: 'Could not update stock count' });
     }
   };
 
@@ -82,7 +82,7 @@ export default function AdminProductsPage() {
     setSubcategory('General');
     setPrice(6500);
     setSize('50ml');
-    setStatus('In Stock');
+    setStock(25);
     setDescription('');
     setLongDescription('');
     setHowToUse('');
@@ -99,7 +99,7 @@ export default function AdminProductsPage() {
     setSubcategory(p.subcategory || 'General');
     setPrice(p.price);
     setSize(p.size || '50ml');
-    setStatus(p.status);
+    setStock(p.stock ?? 0);
     setDescription(p.description);
     setLongDescription(p.longDescription || '');
     setHowToUse(p.howToUse || '');
@@ -143,7 +143,7 @@ export default function AdminProductsPage() {
           ingredients: parsedIngredients,
           skinTypes: parsedSkinTypes.length > 0 ? (parsedSkinTypes as any) : ['All Skin Types'],
           image: imageUrl,
-          status,
+          stock: Math.max(0, Number(stock)),
         });
         showToast({ type: 'success', title: 'Product Updated Successfully' });
       } else {
@@ -163,7 +163,7 @@ export default function AdminProductsPage() {
           rating: 5.0,
           reviewCount: 0,
           reviews: [],
-          status,
+          stock: Math.max(0, Number(stock)),
         });
         showToast({ type: 'success', title: 'New Product Created' });
       }
@@ -174,7 +174,7 @@ export default function AdminProductsPage() {
     }
   };
 
-  const lowStockCount = products.filter(p => p.status === 'Low Stock').length;
+  const outOfStockCount = products.filter(p => (p.stock ?? 0) === 0).length;
 
   const filtered = products.filter((p) => {
     const matchesSearch =
@@ -182,9 +182,11 @@ export default function AdminProductsPage() {
       p.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (p.subcategory && p.subcategory.toLowerCase().includes(searchQuery.toLowerCase()));
     const matchesCat = selectedCategory === 'All' || p.category === selectedCategory;
-    const matchesStatus = statusFilter === 'All' || p.status === statusFilter;
+    const matchesStock =
+      stockFilter === 'All' ||
+      (stockFilter === 'In Stock' ? (p.stock ?? 0) > 0 : (p.stock ?? 0) === 0);
 
-    return matchesSearch && matchesCat && matchesStatus;
+    return matchesSearch && matchesCat && matchesStock;
   });
 
   return (
@@ -195,17 +197,17 @@ export default function AdminProductsPage() {
           <span className="text-[10px] uppercase tracking-[0.25em] font-medium text-[#C87D55] block mb-1">
             Cleanroom Catalog & Inventory
           </span>
-          <h1 className="font-serif text-3xl text-[#1A1A1A]">Products & Status Management</h1>
+          <h1 className="font-serif text-3xl text-[#1A1A1A]">Products & Stock Management</h1>
         </div>
 
         <div className="flex items-center gap-3">
-          {lowStockCount > 0 && (
+          {outOfStockCount > 0 && (
             <button
-              onClick={() => setStatusFilter('Low Stock')}
+              onClick={() => setStockFilter('Out of Stock')}
               className="px-4 py-2 rounded-2xl bg-[#C87D55]/15 border border-[#C87D55]/30 flex items-center gap-2 text-xs font-semibold text-[#C87D55] hover:bg-[#C87D55]/25 transition-colors cursor-pointer"
             >
               <AlertTriangle className="w-4 h-4" />
-              <span>{lowStockCount} Low Stock Alerts</span>
+              <span>{outOfStockCount} Out of Stock Alerts</span>
             </button>
           )}
 
@@ -229,19 +231,19 @@ export default function AdminProductsPage() {
             />
           </div>
 
-          {/* Status state pills */}
+          {/* Stock state pills: In Stock (Stock > 0), Out of Stock (Stock = 0) */}
           <div className="flex items-center gap-1.5 w-full sm:w-auto overflow-x-auto">
-            {(['All', 'In Stock', 'Low Stock', 'Out of Stock'] as StatusFilter[]).map((st) => (
+            {(['All', 'In Stock', 'Out of Stock'] as StockFilter[]).map((st) => (
               <button
                 key={st}
-                onClick={() => setStatusFilter(st)}
+                onClick={() => setStockFilter(st)}
                 className={`px-3 py-1.5 rounded-full text-xs uppercase tracking-wider whitespace-nowrap transition-colors cursor-pointer ${
-                  statusFilter === st
+                  stockFilter === st
                     ? 'bg-[#1A1A1A] text-[#FAF8F5] font-semibold'
                     : 'bg-[#FAF8F5] text-[#1A1A1A]/70 hover:text-[#1A1A1A]'
                 }`}
               >
-                {st}
+                {st === 'In Stock' ? 'In Stock' : st === 'Out of Stock' ? 'Out of Stock ' : 'All Stock'}
               </button>
             ))}
           </div>
@@ -275,7 +277,7 @@ export default function AdminProductsPage() {
                 <th className="py-4 px-6">Category & Subcategory</th>
                 <th className="py-4 px-6">Price</th>
                 <th className="py-4 px-6">Rating / Reviews</th>
-                <th className="py-4 px-6">Status</th>
+                <th className="py-4 px-6">Current Stock</th>
                 <th className="py-4 px-6 text-right">Actions</th>
               </tr>
             </thead>
@@ -307,25 +309,31 @@ export default function AdminProductsPage() {
                     LKR {prod.price.toLocaleString()}
                   </td>
                   <td className="py-4 px-6 text-[#1A1A1A]/70">
-                    ★ {prod.rating.toFixed(1)} ({prod.reviewCount} reviews)
+                    {prod.rating !== null && prod.rating !== undefined
+                      ? `★ ${Number(prod.rating).toFixed(1)} (${prod.reviewCount || 0} reviews)`
+                      : '★ New (0 reviews)'}
                   </td>
                   <td className="py-4 px-6">
-                    <select
-                      value={prod.status}
-                      onChange={(e) => handleUpdateStatus(prod, e.target.value as 'In Stock' | 'Low Stock' | 'Out of Stock')}
-                      className="px-2.5 py-1 rounded-xl bg-[#FAF8F5] border border-[#1A1A1A]/10 text-xs font-medium text-[#1A1A1A] outline-none cursor-pointer"
-                    >
-                      <option value="In Stock">In Stock</option>
-                      <option value="Low Stock">Low Stock</option>
-                      <option value="Out of Stock">Out of Stock</option>
-                    </select>
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`inline-flex items-center px-2.5 py-1 rounded-xl text-xs font-semibold ${
+                          (prod.stock ?? 0) > 10
+                            ? 'bg-[#8A9A86]/15 text-[#6B7B67] border border-[#8A9A86]/30'
+                            : (prod.stock ?? 0) > 0
+                            ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                            : 'bg-red-50 text-red-600 border border-red-200'
+                        }`}
+                      >
+                        {(prod.stock ?? 0) > 0 ? `${prod.stock} in stock` : '0 (Out of stock)'}
+                      </span>
+                    </div>
                   </td>
                   <td className="py-4 px-6 text-right">
                     <div className="flex items-center justify-end gap-2">
                       <button
                         onClick={() => handleOpenEditModal(prod)}
                         className="p-1.5 rounded-lg border border-[#1A1A1A]/10 text-[#1A1A1A]/70 hover:text-[#1A1A1A] hover:bg-[#FAF8F5] transition-colors cursor-pointer"
-                        title="Edit Formulation"
+                        title="Edit Formulation & Stock"
                       >
                         <Edit3 className="w-3.5 h-3.5" />
                       </button>
@@ -349,7 +357,7 @@ export default function AdminProductsPage() {
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={editingProduct ? 'Edit Formulation' : 'Create New Formulation'}
+        title={editingProduct ? 'Edit Formulation & Stock' : 'Create New Formulation'}
         maxWidth="lg"
       >
         <form onSubmit={handleSaveProduct} className="space-y-4 text-xs">
@@ -403,20 +411,15 @@ export default function AdminProductsPage() {
               placeholder="30ml / 50ml"
             />
 
-            <div>
-              <label className="text-[10px] uppercase tracking-wider font-semibold text-[#1A1A1A]/60 block mb-1">
-                Status
-              </label>
-              <select
-                value={status}
-                onChange={(e) => setStatus(e.target.value as 'In Stock' | 'Low Stock' | 'Out of Stock')}
-                className="w-full p-2.5 rounded-xl bg-[#FAF8F5] border border-[#1A1A1A]/10 text-xs text-[#1A1A1A] outline-none focus:border-[#C87D55]"
-              >
-                <option value="In Stock">In Stock</option>
-                <option value="Low Stock">Low Stock</option>
-                <option value="Out of Stock">Out of Stock</option>
-              </select>
-            </div>
+            <Input
+              label="Current Stock (Quantity) *"
+              type="number"
+              required
+              min={0}
+              value={stock}
+              onChange={(e) => setStock(Math.max(0, Number(e.target.value)))}
+              placeholder="e.g. 25"
+            />
           </div>
 
           <Input

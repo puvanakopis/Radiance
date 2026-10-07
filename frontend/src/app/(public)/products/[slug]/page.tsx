@@ -124,9 +124,16 @@ export default function ProductDetailPage({
     }
   };
 
-  const handleAddReview = async (newRev: Omit<Review, 'id' | 'date' | 'helpfulCount'>) => {
+  const handleAddReview = async (newRev: { productId: string; rating: number; feedback: string; userName?: string }) => {
     const created = await productService.addReview(newRev);
-    setReviews((prev) => [created, ...prev]);
+    const updatedProduct = await productService.getProductById(newRev.productId);
+    if (updatedProduct) {
+      setProduct(updatedProduct);
+      const revs = await productService.getReviewsForProduct(newRev.productId);
+      setReviews(revs);
+    } else {
+      setReviews((prev) => [created, ...prev]);
+    }
   };
 
   const accordionItems: AccordionItem[] = [
@@ -136,15 +143,17 @@ export default function ProductDetailPage({
       defaultOpen: true,
       content: (
         <div className="space-y-4">
-          <p>{product.longDescription}</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-            {product.activeIngredients.map((act) => (
-              <div key={act.name} className="p-3 bg-[#FAF8F5] rounded-xl border border-[#1A1A1A]/5">
-                <span className="text-xs font-semibold text-[#1A1A1A] block">{act.name}</span>
-                <span className="text-[11px] text-[#1A1A1A]/70">{act.benefit}</span>
-              </div>
-            ))}
-          </div>
+          <p>{product.longDescription || product.description || 'Clinical formulation meticulously crafted with high-performance botanicals.'}</p>
+          {Array.isArray(product.activeIngredients) && product.activeIngredients.length > 0 && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+              {product.activeIngredients.map((act) => (
+                <div key={act.name} className="p-3 bg-[#FAF8F5] rounded-xl border border-[#1A1A1A]/5">
+                  <span className="text-xs font-semibold text-[#1A1A1A] block">{act.name}</span>
+                  <span className="text-[11px] text-[#1A1A1A]/70">{act.benefit}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       ),
     },
@@ -154,7 +163,9 @@ export default function ProductDetailPage({
       content: (
         <div className="space-y-3">
           <p className="text-xs leading-relaxed text-[#1A1A1A]/75">
-            {product.ingredients.join(', ')}.
+            {Array.isArray(product.ingredients) && product.ingredients.length > 0
+              ? `${product.ingredients.join(', ')}.`
+              : 'Aqua, Botanical Glycerin, Plant Extracts, Natural Preservatives.'}
           </p>
           <p className="text-[11px] text-[#1A1A1A]/50 italic">
             Formulated without sulfates (SLS/SLES), parabens, formaldehydes, phthalates, mineral oil, retinyl palmitate, or synthetic fragrance.
@@ -167,7 +178,7 @@ export default function ProductDetailPage({
       title: 'How To Use (The Ritual)',
       content: (
         <div className="space-y-2">
-          <p>{product.howToUse}</p>
+          <p>{product.howToUse || 'Dispense a modest amount onto cleansed fingertips. Gently press and massage into face and neck using upward rhythmic motions.'}</p>
         </div>
       ),
     },
@@ -214,8 +225,7 @@ export default function ProductDetailPage({
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                {product.status === 'Low Stock' && <Badge variant="terracotta">Low Stock</Badge>}
-                {product.status === 'Out of Stock' && <Badge variant="dark">Sold Out</Badge>}
+                {product.stock <= 0 && <Badge variant="dark">Sold Out</Badge>}
                 <span className="text-xs uppercase tracking-[0.18em] font-medium text-[#1A1A1A]/50">
                   {product.category}
                 </span>
@@ -305,7 +315,7 @@ export default function ProductDetailPage({
                   {quantity}
                 </span>
                 <button
-                  onClick={() => setQuantity(quantity + 1)}
+                  onClick={() => setQuantity(product.stock > 0 ? Math.min(product.stock, quantity + 1) : quantity + 1)}
                   className="w-6 h-6 flex items-center justify-center text-[#1A1A1A]/70 hover:text-[#1A1A1A] cursor-pointer"
                   aria-label="Increase quantity"
                 >
@@ -319,13 +329,13 @@ export default function ProductDetailPage({
                 size="lg"
                 fullWidth
                 onClick={handleAddToCart}
-                disabled={product.status === 'Out of Stock'}
+                disabled={product.stock <= 0}
               >
                 {isAdded ? (
                   <>
                     <Check className="w-4 h-4" /> Added to Bag
                   </>
-                ) : product.status === 'Out of Stock' ? (
+                ) : product.stock <= 0 ? (
                   'Out of Stock'
                 ) : (
                   `Add to Bag • LKR ${(product.price * quantity).toLocaleString()}`
@@ -345,12 +355,10 @@ export default function ProductDetailPage({
             {/* Stock status indicator */}
             <div className="flex items-center justify-between text-xs text-[#1A1A1A]/60 pt-1">
               <span className="flex items-center gap-1.5">
-                <span className={`w-2 h-2 rounded-full ${product.status !== 'Out of Stock' ? 'bg-[#8A9A86]' : 'bg-[#C87D55]'}`} />
-                {product.status === 'In Stock'
-                  ? 'In Stock & Ready for Immediate Dispatch'
-                  : product.status === 'Low Stock'
-                  ? 'Limited Supply Remaining in Cleanroom Inventory'
-                  : 'Currently Sold Out'}
+                <span className={`w-2 h-2 rounded-full ${product.stock > 0 ? 'bg-[#8A9A86]' : 'bg-[#C87D55]'}`} />
+                {product.stock > 0
+                  ? `In Stock (${product.stock} units available)`
+                  : 'Currently Out of Stock'}
               </span>
               <span className="text-[11px] text-[#1A1A1A]/40">ID: {product.id}</span>
             </div>
