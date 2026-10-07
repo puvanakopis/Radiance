@@ -237,7 +237,7 @@ export default function SettingsPage() {
               <div>
                 <h2 className="font-serif text-lg sm:text-xl text-red-900">Decommission Sanctuary Account</h2>
                 <p className="text-xs text-[#1A1A1A]/50">
-                  Permanently erase your account, personal data, and order history from SKINOVA.
+                  Permanently erase your account, personal data, and order history from Radiance.
                 </p>
               </div>
             </div>

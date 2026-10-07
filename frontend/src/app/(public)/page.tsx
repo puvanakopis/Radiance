@@ -130,7 +130,7 @@ export default function HomePage() {
               <div className="double-bezel-inner relative w-full aspect-[4/4.5] sm:aspect-[4/4.8] overflow-hidden rounded-[calc(1.75rem-0.375rem)] bg-[#1A1A1A]">
                 <img
                   src="https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=1200&q=85"
-                  alt="Skinova Velvet Glow Serum"
+                  alt="Radiance Velvet Glow Serum"
                   className="w-full h-full object-cover object-center scale-105 hover:scale-100 transition-transform duration-1000 ease-out"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/10 pointer-events-none" />
@@ -318,7 +318,7 @@ export default function HomePage() {
               <span className="italic font-light text-[#2B2523]">Simple products. Thoughtful formulas. Everyday results.</span>
             </h2>
             <p className="text-sm text-[#1A1A1A]/70 leading-relaxed font-light">
-              We believe great skin is not created through complex 12-step regimens, but through intentional botanical consistency. Every Skinova formulation is engineered to blend seamlessly without pilling or heavy occlusives.
+              We believe great skin is not created through complex 12-step regimens, but through intentional botanical consistency. Every Radiance formulation is engineered to blend seamlessly without pilling or heavy occlusives.
             </p>
             <div className="pt-2 flex items-center gap-4">
               <Link href="/about">

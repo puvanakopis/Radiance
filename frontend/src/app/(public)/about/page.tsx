@@ -40,7 +40,7 @@ export default function AboutPage() {
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#EAE3D9]/60 border border-[#1A1A1A]/5 text-[#1A1A1A]">
           <Flower2 className="w-3.5 h-3.5 text-[#C87D55] stroke-[1.75]" />
           <span className="text-[10px] uppercase tracking-[0.25em] font-medium">
-            The Skinova Genesis
+            The Radiance Genesis
           </span>
         </div>
 
@@ -50,7 +50,7 @@ export default function AboutPage() {
         </h1>
 
         <p className="text-base sm:text-lg text-[#1A1A1A]/75 font-light leading-relaxed max-w-2xl mx-auto">
-          Born from the intersection of Ceylon’s restorative flora and modern clinical dermatology, SKINOVA crafts daily rituals that celebrate equilibrium, transparency, and cellular health.
+          Born from the intersection of Ceylon’s restorative flora and modern clinical dermatology, Radiance crafts daily rituals that celebrate equilibrium, transparency, and cellular health.
         </p>
       </section>
 
@@ -60,7 +60,7 @@ export default function AboutPage() {
           <div className="double-bezel-inner aspect-[4/5] rounded-[calc(1.75rem-0.375rem)] overflow-hidden bg-[#1A1A1A]">
             <img
               src="https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=1200&q=80"
-              alt="Skinova cleanroom and formulation craft"
+              alt="Radiance cleanroom and formulation craft"
               className="w-full h-full object-cover"
             />
           </div>
@@ -85,7 +85,7 @@ export default function AboutPage() {
               "We do not promise instant miracles. We engineer sustainable dermal harmony through intentional daily rituals."
             </p>
             <span className="text-[11px] uppercase tracking-wider text-[#1A1A1A]/60 block pt-1">
-              — The Skinova Formulation Collective, Colombo
+              — The Radiance Formulation Collective, Colombo
             </span>
           </div>
         </div>
@@ -98,7 +98,7 @@ export default function AboutPage() {
             Core Standards
           </span>
           <h2 className="font-serif text-3xl sm:text-4xl text-[#1A1A1A]">
-            The Skinova Four Pillars
+            The Radiance Four Pillars
           </h2>
           <p className="text-xs sm:text-sm text-[#1A1A1A]/60 font-light">
             Strict formulation guidelines guiding every bottle that leaves our facility.

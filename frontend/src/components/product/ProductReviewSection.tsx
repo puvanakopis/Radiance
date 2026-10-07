@@ -54,7 +54,7 @@ export const ProductReviewSection: React.FC<ProductReviewSectionProps> = ({
       showToast({
         type: 'info',
         title: 'Sign In Required',
-        message: 'Please sign in to your Skinova account to share your verified experience.',
+        message: 'Please sign in to your Radiance account to share your verified experience.',
       });
       return;
     }

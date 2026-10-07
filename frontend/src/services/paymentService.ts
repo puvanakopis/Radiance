@@ -1,5 +1,5 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
-const TOKEN_STORAGE_KEY = 'skinova_jwt_token';
+const TOKEN_STORAGE_KEY = 'radiance_jwt_token';
 
 export interface PayHereInitiatePayload {
   orderId: string;

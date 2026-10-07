@@ -8,7 +8,7 @@ async function seedAdmin() {
   try {
     await connectDB();
 
-    const adminEmail = ENV.ADMIN_EMAIL || 'admin@skinova.com';
+    const adminEmail = ENV.ADMIN_EMAIL || 'admin@radiance.com';
     const adminPassword = ENV.ADMIN_PASSWORD || 'Admin@123456';
     const adminFirstName = ENV.ADMIN_FIRST_NAME || 'Master';
     const adminLastName = ENV.ADMIN_LAST_NAME || 'Admin';

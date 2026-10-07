@@ -26,7 +26,7 @@ interface CartContextType {
 }
 
 const STANDARD_SHIPPING_FEE = 450;
-const STORAGE_KEY = 'skinova_cart_items';
+const STORAGE_KEY = 'radiance_cart_items';
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 

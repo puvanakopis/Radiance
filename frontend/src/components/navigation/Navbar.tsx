@@ -89,7 +89,7 @@ export const Navbar: React.FC = () => {
               <div className="flex items-center gap-10">
                 <Link href="/" className="group flex flex-col items-start">
                   <span className="font-serif text-2xl sm:text-3xl tracking-[0.2em] font-medium text-[#1A1A1A] group-hover:text-[#C87D55] transition-colors leading-none">
-                    SKINOVA
+                    Radiance
                   </span>
                   <span className="text-[7.5px] uppercase tracking-[0.28em] text-[#1A1A1A]/50 mt-1 hidden sm:block">
                     Beauty, thoughtfully made
@@ -204,7 +204,7 @@ export const Navbar: React.FC = () => {
               <div className="space-y-6">
                 <div className="flex items-center justify-between pb-4 border-b border-[#1A1A1A]/10">
                   <span className="font-serif text-xl tracking-[0.2em] font-medium text-[#1A1A1A]">
-                    SKINOVA
+                    Radiance
                   </span>
                   <button
                     onClick={() => setIsMobileMenuOpen(false)}

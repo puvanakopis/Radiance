@@ -47,7 +47,7 @@ export async function initiatePayHerePayment(req, res, next) {
       orderId,
       amount,
       currency = 'LKR',
-      items = 'Skinova Botanical Skincare Order',
+      items = 'Radiance Botanical Skincare Order',
       firstName = 'Valued',
       lastName = 'Patron',
       email = '',

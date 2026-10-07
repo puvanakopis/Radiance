@@ -20,7 +20,7 @@ export default function AuthLayout({
         </Link>
 
         <Link href="/" className="font-serif text-2xl tracking-[0.25em] font-medium text-[#1A1A1A]">
-          SKINOVA
+          Radiance
         </Link>
 
         <div className="hidden sm:flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-[#8A9A86] font-medium">
@@ -36,7 +36,7 @@ export default function AuthLayout({
 
       {/* Minimalistic footer */}
       <footer className="py-6 px-6 text-center text-xs text-[#1A1A1A]/40 border-t border-[#1A1A1A]/5">
-        <p>© {new Date().getFullYear()} SKINOVA Botanicals. Handcrafted conscious beauty.</p>
+        <p>© {new Date().getFullYear()} Radiance Botanicals. Handcrafted conscious beauty.</p>
       </footer>
     </div>
   );

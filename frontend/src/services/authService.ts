@@ -7,8 +7,8 @@ import {
 } from '@/types/auth.interface';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
-const TOKEN_STORAGE_KEY = 'skinova_jwt_token';
-const USER_STORAGE_KEY = 'skinova_user';
+const TOKEN_STORAGE_KEY = 'radiance_jwt_token';
+const USER_STORAGE_KEY = 'radiance_user';
 
 class AuthService {
   private currentUser: Customer | null = null;

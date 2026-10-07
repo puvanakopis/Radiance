@@ -1,7 +1,7 @@
 {
-  "name": "skinova-backend",
+  "name": "radiance-backend",
   "version": "1.0.0",
-  "description": "Skinova Botanical Skincare E-Commerce Backend REST API",
+  "description": "Radiance Botanical Skincare E-Commerce Backend REST API",
   "main": "src/server.js",
   "type": "module",
   "scripts": {

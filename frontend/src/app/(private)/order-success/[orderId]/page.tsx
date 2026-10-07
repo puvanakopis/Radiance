@@ -91,7 +91,7 @@ export default function OrderSuccessPage({
             {order.paymentMethod === 'WhatsApp' ? 'WhatsApp Order Registered' : 'Ritual Confirmed'}
           </span>
           <h1 className="font-serif text-3xl sm:text-5xl text-[#1A1A1A]">
-            Thank you for choosing Skinova.
+            Thank you for choosing Radiance.
           </h1>
           <p className="text-sm text-[#1A1A1A]/70 max-w-md mx-auto leading-relaxed">
             {order.paymentMethod === 'WhatsApp'

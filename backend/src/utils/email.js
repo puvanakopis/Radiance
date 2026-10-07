@@ -37,8 +37,8 @@ export async function sendOtpEmail({
   const isPasswordReset = purpose.toLowerCase().includes('password') || purpose.toLowerCase().includes('reset');
 
   const actionText = isPasswordReset
-    ? 'We received a request to reset your Skinova account password. Please use the following one-time verification code to proceed:'
-    : 'Thank you for choosing Skinova. To complete your registration and verify your email address, please use the following one-time verification code:';
+    ? 'We received a request to reset your Radiance account password. Please use the following one-time verification code to proceed:'
+    : 'Thank you for choosing Radiance. To complete your registration and verify your email address, please use the following one-time verification code:';
 
   const footerText = isPasswordReset
     ? 'If you did not request a password reset, please secure your account immediately and disregard this email. Never share this code with anyone.'
@@ -68,7 +68,7 @@ export async function sendOtpEmail({
 <body>
   <div class="container">
     <div class="header">
-      <h1>SKINOVA</h1>
+      <h1>RADIANCE</h1>
       <p>Luxury Botanical Skincare</p>
     </div>
     <div class="body">
@@ -85,7 +85,7 @@ export async function sendOtpEmail({
       </div>
     </div>
     <div class="footer">
-      &copy; 2026 Skinova Botanical Sanctuary. All rights reserved.
+      &copy; 2026 Radiance Botanical Sanctuary. All rights reserved.
     </div>
   </div>
 </body>
@@ -94,7 +94,7 @@ export async function sendOtpEmail({
 
   // Always log in console for development visibility
   console.log(`\n======================================================`);
-  console.log(` 📧 EMAIL OTP NOTIFICATION (Skinova Auth)`);
+  console.log(` 📧 EMAIL OTP NOTIFICATION (Radiance Auth)`);
   console.log(` To:      ${to}`);
   console.log(` Purpose: ${purpose}`);
   console.log(` OTP:     >>> [ ${otp} ] <<<`);
@@ -111,8 +111,8 @@ export async function sendOtpEmail({
     await mailTransporter.sendMail({
       from: ENV.SMTP_FROM,
       to,
-      subject: `${otp} is your Skinova ${subjectPrefix} Code`,
-      text: `Your Skinova ${subjectPrefix.toLowerCase()} code is ${otp}. It will expire in ${expiresInMinutes} minutes.`,
+      subject: `${otp} is your Radiance ${subjectPrefix} Code`,
+      text: `Your Radiance ${subjectPrefix.toLowerCase()} code is ${otp}. It will expire in ${expiresInMinutes} minutes.`,
       html: htmlContent,
     });
     return true;

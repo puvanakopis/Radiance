@@ -80,7 +80,7 @@ class WhatsAppService {
     const orderRef = data.orderNumber ? `#${data.orderNumber}` : `#VL-${Date.now().toString().slice(-6)}`;
     const conciseSummary = this.getGroupedItemsSummary(data.items);
 
-    const header = `*✨ SKINOVA ORDER INQUIRY & CONFIRMATION ✨*\n` +
+    const header = `*✨ RADIANCE ORDER INQUIRY & CONFIRMATION ✨*\n` +
       `_Beauty, thoughtfully made._\n\n` +
       `*Order Ref:* ${orderRef}\n` +
       `*Date:* ${new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}\n` +

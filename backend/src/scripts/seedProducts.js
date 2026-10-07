@@ -33,7 +33,7 @@ const initialProducts = [
   },
   {
     _id: 'prod_02',
-    name: 'Skinova Hydrating Face Cream',
+    name: 'Radiance Hydrating Face Cream',
     category: 'Skincare',
     subcategory: 'Moisturizers',
     price: 7400,
@@ -240,7 +240,7 @@ const initialProducts = [
     price: 24500,
     size: '4 Piece Kit',
     description: 'Our award-winning 4-piece ritual boxed in organic textured paper and raw linen ribbon.',
-    longDescription: 'Includes: Gentle Cloud Cleanser (50ml), Velvet Glow Serum (30ml), Skinova Hydrating Face Cream (30ml), and Mineral SPF 50 (30ml). Everything you need for radiant, perfected skin from sunrise to dusk.',
+    longDescription: 'Includes: Gentle Cloud Cleanser (50ml), Velvet Glow Serum (30ml), Radiance Hydrating Face Cream (30ml), and Mineral SPF 50 (30ml). Everything you need for radiant, perfected skin from sunrise to dusk.',
     ingredients: ['Curated active sets containing pure botanical formulations.'],
     activeIngredients: [
       { name: 'Complete Synergy', benefit: 'Scientifically sequenced to optimize layering without pilling.' }

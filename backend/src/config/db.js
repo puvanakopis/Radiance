@@ -32,7 +32,7 @@ export async function connectDB() {
     if (err.message.includes('ENOTFOUND') || err.message.includes('querySrv')) {
       console.error(`1. Check your MongoDB Atlas cluster hostname in .env for any typos.`);
       console.error(`2. Ensure your Atlas cluster is running (not paused/deleted).`);
-      console.error(`3. Or test with a local MongoDB: DATABASE_URL=mongodb://localhost:27017/skinova`);
+      console.error(`3. Or test with a local MongoDB: DATABASE_URL=mongodb://localhost:27017/radiance`);
     } else if (err.message.includes('bad auth') || err.message.includes('Authentication failed')) {
       console.error(`1. Check your database username and password in .env.`);
       console.error(`2. Ensure the user exists in MongoDB Atlas -> Database Access.`);

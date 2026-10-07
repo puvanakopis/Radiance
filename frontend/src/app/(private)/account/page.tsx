@@ -168,7 +168,7 @@ export default function AccountPage() {
 
             <div className="flex items-center gap-2 self-start sm:self-auto">
               <Badge variant="sage" size="xs">
-                Skinova Gold Sanctuary
+                Radiance Gold Sanctuary
               </Badge>
               <span className="text-xs text-[#1A1A1A]/40 font-mono">ID: {user.id}</span>
             </div>
@@ -215,7 +215,7 @@ export default function AccountPage() {
                   required
                   value={editEmail}
                   onChange={(e) => setEditEmail(e.target.value)}
-                  placeholder="patron@skinova.lk"
+                  placeholder="patron@radiance.lk"
                   className="w-full p-3.5 rounded-2xl bg-[#FAF8F5] border border-[#1A1A1A]/10 text-xs text-[#1A1A1A] outline-none focus:border-[#C87D55] focus:bg-white transition-all"
                 />
               </div>

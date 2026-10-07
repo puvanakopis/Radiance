@@ -13,10 +13,10 @@ export const ENV = {
   FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:3000',
 
   // Database
-  DATABASE_URL: process.env.DATABASE_URL || 'mongodb://localhost:27017/skinova',
+  DATABASE_URL: process.env.DATABASE_URL || 'mongodb://localhost:27017/radiance',
 
   // JWT Auth
-  JWT_SECRET: process.env.JWT_SECRET || 'skinova_dev_secret_key_change_in_production_2026',
+  JWT_SECRET: process.env.JWT_SECRET || 'radiance_dev_secret_key_change_in_production_2026',
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '7d',
 
   // PayHere Sandbox
@@ -37,10 +37,10 @@ export const ENV = {
   SMTP_USER: process.env.SMTP_USER || '',
   SMTP_PASS: process.env.SMTP_PASS || '',
   SMTP_SECURE: process.env.SMTP_SECURE === 'true',
-  SMTP_FROM: process.env.SMTP_FROM || '"Skinova Botanical Skincare" <noreply@skinova.lk>',
+  SMTP_FROM: process.env.SMTP_FROM || '"Radiance Botanical Skincare" <noreply@radiance.lk>',
 
   // Initial Admin Credentials
-  ADMIN_EMAIL: process.env.ADMIN_EMAIL || 'admin@skinova.com',
+  ADMIN_EMAIL: process.env.ADMIN_EMAIL || 'admin@radiance.com',
   ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || 'Admin@123456',
   ADMIN_FIRST_NAME: process.env.ADMIN_FIRST_NAME || 'Master',
   ADMIN_LAST_NAME: process.env.ADMIN_LAST_NAME || 'Admin',

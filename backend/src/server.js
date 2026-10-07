@@ -46,7 +46,7 @@ apiRouter.use('/payments', paymentRoutes);
 
 // Health check endpoint
 apiRouter.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok', service: 'skinova-api', timestamp: new Date().toISOString() });
+  res.status(200).json({ status: 'ok', service: 'radiance-api', timestamp: new Date().toISOString() });
 });
 
 // Mount API router
@@ -55,7 +55,7 @@ app.use('/api', apiRouter);
 // Root Service Discovery Endpoint
 app.get('/', (req, res) => {
   res.json({
-    name: 'Skinova Botanical Skincare API',
+    name: 'Radiance Botanical Skincare API',
     version: '1.0.0',
     status: 'online',
     endpoints: {
@@ -83,7 +83,7 @@ async function startServer() {
 
     server = app.listen(ENV.PORT, () => {
       console.log(`=========================================`);
-      console.log(`Skinova API Running`);
+      console.log(`Radiance API Running`);
       console.log(`Port: ${ENV.PORT}`);
       console.log(`Mode: ${ENV.NODE_ENV}`);
       console.log(`API Base: http://localhost:${ENV.PORT}/api`);
