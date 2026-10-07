@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Script from 'next/script';
 import './globals.css';
 import { AuthProvider } from '@/context/AuthContext';
 import { CartProvider } from '@/context/CartContext';
@@ -30,6 +31,12 @@ export default function RootLayout({
       <body className="min-h-screen bg-[#FAF8F5] text-[#1A1A1A] antialiased selection:bg-[#C87D55]/20 selection:text-[#1A1A1A]">
         {/* Subtle Luxury Film Grain Overlay */}
         <div className="grain-overlay" aria-hidden="true" />
+        {/* PayHere Official JS SDK */}
+        <Script
+          id="payhere-sdk-script"
+          src="https://www.payhere.lk/lib/payhere.js"
+          strategy="afterInteractive"
+        />
         <ToastProvider>
           <AuthProvider>
             <WishlistProvider>

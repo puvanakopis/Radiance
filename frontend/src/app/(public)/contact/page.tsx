@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import { useToast } from '@/context/ToastContext';
+import { whatsappService } from '@/services/whatsappService';
 
 export default function ContactPage() {
   const [name, setName] = useState('');
@@ -68,13 +69,13 @@ export default function ContactPage() {
               Chat directly with our skincare advisors in Colombo for immediate order confirmation and skin consultations.
             </p>
             <a
-              href="https://wa.me/94771234567"
+              href={whatsappService.getDirectChatUrl()}
               target="_blank"
               rel="noreferrer"
               className="inline-block w-full"
             >
               <Button variant="whatsapp" size="md" fullWidth icon={MessageSquare}>
-                Chat On WhatsApp (+94 77 123 4567)
+                Chat On WhatsApp ({whatsappService.getFormattedDisplayNumber()})
               </Button>
             </a>
           </div>

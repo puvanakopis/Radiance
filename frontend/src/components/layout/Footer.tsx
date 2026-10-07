@@ -1,6 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { MessageSquare } from 'lucide-react';
+import { whatsappService } from '@/services/whatsappService';
 
 export const Footer: React.FC = () => {
   return (
@@ -30,13 +31,13 @@ export const Footer: React.FC = () => {
                 Direct WhatsApp Concierge:
               </span>
               <a
-                href="https://wa.me/94771234567"
+                href={whatsappService.getDirectChatUrl()}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 text-xs text-[#FAF8F5]/80 hover:text-white mt-1 underline underline-offset-4"
               >
                 <MessageSquare className="w-3.5 h-3.5 text-[#25D366]" />
-                +94 77 123 4567 (10:00 - 19:00 IST)
+                {whatsappService.getFormattedDisplayNumber()} (10:00 - 19:00 IST)
               </a>
             </div>
           </div>

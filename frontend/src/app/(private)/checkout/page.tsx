@@ -93,26 +93,7 @@ export default function CheckoutPage() {
     setIsProcessing(true);
     try {
       if (paymentMethod === 'PayHere') {
-        const payResult = await paymentService.processPayHerePayment({
-          orderId: `VL-${Date.now()}`,
-          items: items.map(i => `${i.product.name} (${i.quantity})`).join(', '),
-          amount: total,
-          currency: 'LKR',
-          firstName: firstName.trim(),
-          lastName: lastName.trim(),
-          email,
-          phone,
-          address: street,
-          city,
-          country: 'Sri Lanka',
-        });
-
-        if (!payResult.success) {
-          showToast({ type: 'error', title: 'Payment Failed', message: payResult.error });
-          setIsProcessing(false);
-          return;
-        }
-
+        // 1. First create the order in backend with Pending status
         const createdOrder = await orderService.createOrder({
           customer: {
             id: user?.id || `cust-${Date.now()}`,
@@ -121,7 +102,7 @@ export default function CheckoutPage() {
             phone,
           },
           deliveryAddress: currentAddress,
-          items: items.map(item => ({
+          items: items.map((item) => ({
             productId: item.product.id,
             productName: item.product.name,
             productImage: item.product.image,
@@ -134,16 +115,46 @@ export default function CheckoutPage() {
           discount,
           shipping,
           total,
-          status: 'Confirmed',
+          status: 'Placed',
           paymentMethod: 'PayHere',
-          paymentStatus: 'Paid',
-          paymentReference: payResult.transactionId,
+          paymentStatus: 'Pending',
           notes,
         });
 
+        // 2. Open PayHere Sandbox modal
+        const payResult = await paymentService.processPayHerePayment({
+          orderId: createdOrder.orderNumber || createdOrder.id,
+          items: items.map((i) => `${i.product.name} (${i.selectedSize || 'Standard'} × ${i.quantity})`).join(', '),
+          amount: total,
+          currency: 'LKR',
+          firstName: firstName.trim() || 'Valued',
+          lastName: lastName.trim() || 'Patron',
+          email,
+          phone,
+          address: `${street}${apartment ? ', ' + apartment : ''}`,
+          city,
+          country: 'Sri Lanka',
+        });
+
+        if (!payResult.success) {
+          showToast({
+            type: 'info',
+            title: 'Payment Incomplete',
+            message: payResult.error || 'Payment was cancelled or dismissed. You can retry or switch to WhatsApp order.',
+          });
+          setIsProcessing(false);
+          return;
+        }
+
         clearCart();
+        showToast({
+          type: 'success',
+          title: 'Payment Successful',
+          message: 'Your payment was processed securely. Thank you for your order!',
+        });
         router.push(`/order-success/${createdOrder.id}`);
       } else if (paymentMethod === 'WhatsApp') {
+        // 1. Create order in backend with Awaiting WhatsApp Confirmation status
         const createdOrder = await orderService.createOrder({
           customer: {
             id: user?.id || `cust-${Date.now()}`,
@@ -152,7 +163,7 @@ export default function CheckoutPage() {
             phone,
           },
           deliveryAddress: currentAddress,
-          items: items.map(item => ({
+          items: items.map((item) => ({
             productId: item.product.id,
             productName: item.product.name,
             productImage: item.product.image,
@@ -171,7 +182,7 @@ export default function CheckoutPage() {
           notes,
         });
 
-        // Launch WhatsApp link
+        // 2. Generate WhatsApp URL with order reference
         const whatsappUrl = whatsappService.generateWhatsAppUrl({
           orderNumber: createdOrder.orderNumber,
           items,
@@ -187,12 +198,22 @@ export default function CheckoutPage() {
         });
 
         clearCart();
+        showToast({
+          type: 'success',
+          title: 'Order Registered',
+          message: 'Opening WhatsApp to send your complete order summary...',
+        });
+
         window.open(whatsappUrl, '_blank');
         router.push(`/order-success/${createdOrder.id}`);
       }
-    } catch (err) {
-      console.error(err);
-      showToast({ type: 'error', title: 'Order Placement Error', message: 'Please retry or choose another payment method.' });
+    } catch (err: any) {
+      console.error('[Checkout Error]:', err);
+      showToast({
+        type: 'error',
+        title: 'Order Placement Error',
+        message: err.message || 'Please check your details and try again.',
+      });
     } finally {
       setIsProcessing(false);
     }

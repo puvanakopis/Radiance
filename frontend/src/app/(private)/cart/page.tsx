@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Minus, Plus, Trash2, ArrowRight, ShoppingBag, Truck, Tag, ShieldCheck, Heart } from 'lucide-react';
+import { Minus, Plus, Trash2, ArrowRight, ShoppingBag, Truck, ShieldCheck, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import { useCart } from '@/context/CartContext';
@@ -17,24 +17,12 @@ export default function CartPage() {
     discount,
     shipping,
     total,
-    appliedCoupon,
     updateQuantity,
     removeItem,
-    applyCoupon,
-    removeCoupon,
   } = useCart();
 
   const { toggleWishlist } = useWishlist();
-  const [couponCode, setCouponCode] = useState('');
   const router = useRouter();
-
-  const handleApplyCoupon = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (couponCode.trim()) {
-      applyCoupon(couponCode);
-      setCouponCode('');
-    }
-  };
 
   const handleSaveForLater = (item: any) => {
     toggleWishlist(item.product);
@@ -180,9 +168,7 @@ export default function CartPage() {
 
               {discount > 0 && (
                 <div className="flex justify-between text-[#8A9A86] font-medium">
-                  <span className="flex items-center gap-1">
-                    <Tag className="w-3 h-3" /> Discount ({appliedCoupon})
-                  </span>
+                  <span>Discount</span>
                   <span>-LKR {discount.toLocaleString()}</span>
                 </div>
               )}
@@ -201,31 +187,6 @@ export default function CartPage() {
               <span className="font-serif text-2xl font-medium text-[#1A1A1A]">
                 LKR {total.toLocaleString()}
               </span>
-            </div>
-
-            {/* Coupon Code Section */}
-            <div className="space-y-2 pt-2">
-              {appliedCoupon ? (
-                <div className="p-3 rounded-xl bg-[#8A9A86]/15 border border-[#8A9A86]/30 flex items-center justify-between text-xs text-[#1A1A1A]">
-                  <span className="font-semibold">{appliedCoupon} Applied</span>
-                  <button onClick={removeCoupon} className="text-[#C87D55] hover:underline font-medium">
-                    Remove
-                  </button>
-                </div>
-              ) : (
-                <form onSubmit={handleApplyCoupon} className="flex gap-2">
-                  <input
-                    type="text"
-                    value={couponCode}
-                    onChange={(e) => setCouponCode(e.target.value)}
-                    placeholder="Coupon code (e.g. SKINOVA10)"
-                    className="flex-1 bg-[#FAF8F5] border border-[#1A1A1A]/15 rounded-xl px-3.5 py-2.5 text-xs text-[#1A1A1A] outline-none focus:border-[#1A1A1A]"
-                  />
-                  <Button type="submit" variant="outline" size="sm">
-                    Apply
-                  </Button>
-                </form>
-              )}
             </div>
 
             {/* Checkout CTA */}
