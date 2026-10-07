@@ -351,7 +351,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       value={{
         user,
         isAuthenticated: !!user,
-        isAdmin: user?.role === 'admin',
+        isAdmin: user?.role?.toLowerCase() === 'admin',
         isLoading,
         login,
         sendRegistrationOtp,
