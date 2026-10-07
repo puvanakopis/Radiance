@@ -2,11 +2,11 @@ import crypto from 'crypto';
 import { ENV } from '../config/env.js';
 
 export function generatePayHereHash(
-  merchantId: string,
-  orderId: string,
-  amount: number,
-  currency: string = 'LKR'
-): string {
+  merchantId,
+  orderId,
+  amount,
+  currency = 'LKR'
+) {
   const formattedAmount = Number(amount).toLocaleString('en-us', { minimumFractionDigits: 2 }).replaceAll(',', '');
   const hashedSecret = crypto
     .createHash('md5')
@@ -18,14 +18,7 @@ export function generatePayHereHash(
   return crypto.createHash('md5').update(mainString).digest('hex').toUpperCase();
 }
 
-export function verifyPayHereNotification(data: {
-  merchant_id: string;
-  order_id: string;
-  payhere_amount: string;
-  payhere_currency: string;
-  status_code: string;
-  md5sig: string;
-}): boolean {
+export function verifyPayHereNotification(data) {
   const hashedSecret = crypto
     .createHash('md5')
     .update(ENV.PAYHERE_MERCHANT_SECRET)

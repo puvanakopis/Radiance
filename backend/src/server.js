@@ -4,6 +4,7 @@ import { ENV } from './config/env.js';
 import { connectDB, disconnectDB } from './config/db.js';
 import { errorHandler } from './middleware/error.middleware.js';
 import authRoutes from './routes/auth.routes.js';
+import productRoutes from './routes/product.routes.js';
 
 export const app = express();
 
@@ -31,10 +32,11 @@ const apiRouter = Router();
 
 // Routes
 apiRouter.use('/auth', authRoutes);
+apiRouter.use('/products', productRoutes);
 
 // Health check endpoint
 apiRouter.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok', service: 'auth-api', timestamp: new Date().toISOString() });
+  res.status(200).json({ status: 'ok', service: 'skinova-api', timestamp: new Date().toISOString() });
 });
 
 // Mount API router
@@ -43,11 +45,12 @@ app.use('/api', apiRouter);
 // Root Service Discovery Endpoint
 app.get('/', (req, res) => {
   res.json({
-    name: 'Skinova Authentication & User Management API',
+    name: 'Skinova Botanical Skincare API',
     version: '1.0.0',
     status: 'online',
     endpoints: {
       auth: '/api/auth',
+      products: '/api/products',
       health: '/api/health',
     },
   });
@@ -57,7 +60,7 @@ app.get('/', (req, res) => {
 app.use(errorHandler);
 
 // Connect to MongoDB and start HTTP Server
-let server: any;
+let server;
 
 async function startServer() {
   try {
@@ -66,14 +69,14 @@ async function startServer() {
 
     server = app.listen(ENV.PORT, () => {
       console.log(`=========================================`);
-      console.log(`Skinova Auth API Running`);
+      console.log(`Skinova API Running`);
       console.log(`Port: ${ENV.PORT}`);
       console.log(`Mode: ${ENV.NODE_ENV}`);
-      console.log(`API Base: http://localhost:${ENV.PORT}/api/auth`);
+      console.log(`API Base: http://localhost:${ENV.PORT}/api`);
       console.log(`=========================================`);
     });
 
-    server.on('error', (err: any) => {
+    server.on('error', (err) => {
       if (err.code === 'EADDRINUSE') {
         console.error(`\n[PORT CONFLICT]: Port ${ENV.PORT} is already in use by an existing process.`);
         console.error(`Solution: Terminate the process on port ${ENV.PORT} or set PORT in .env to another number.\n`);
@@ -83,7 +86,7 @@ async function startServer() {
         process.exit(1);
       }
     });
-  } catch (err: any) {
+  } catch (err) {
     console.error('Failed to start server:', err.message);
     process.exit(1);
   }

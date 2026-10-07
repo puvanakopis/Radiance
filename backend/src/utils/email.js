@@ -1,9 +1,9 @@
-import nodemailer, { Transporter } from 'nodemailer';
+import nodemailer from 'nodemailer';
 import { ENV } from '../config/env.js';
 
-let transporter: Transporter | null = null;
+let transporter = null;
 
-function getTransporter(): Transporter | null {
+function getTransporter() {
   if (transporter) return transporter;
 
   if (ENV.SMTP_HOST && ENV.SMTP_USER && ENV.SMTP_PASS) {
@@ -25,21 +25,13 @@ function getTransporter(): Transporter | null {
   return null;
 }
 
-export interface SendOtpEmailOptions {
-  to: string;
-  name?: string;
-  otp: string;
-  expiresInMinutes?: number;
-  purpose?: string;
-}
-
 export async function sendOtpEmail({
   to,
   name,
   otp,
   expiresInMinutes = 10,
   purpose = 'Registration Verification',
-}: SendOtpEmailOptions): Promise<boolean> {
+}) {
   const mailTransporter = getTransporter();
   const userName = name || 'Valued Client';
   const isPasswordReset = purpose.toLowerCase().includes('password') || purpose.toLowerCase().includes('reset');

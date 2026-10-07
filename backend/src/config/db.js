@@ -4,11 +4,11 @@ import { ENV } from './env.js';
 let isConnected = false;
 
 // Mask password for safe logging
-function getSafeDbUrl(url: string): string {
+function getSafeDbUrl(url) {
   return url.replace(/:\/\/(.*?):(.*?)@/, '://$1:****@');
 }
 
-export async function connectDB(): Promise<typeof mongoose> {
+export async function connectDB() {
   if (isConnected) {
     return mongoose;
   }
@@ -24,7 +24,7 @@ export async function connectDB(): Promise<typeof mongoose> {
     isConnected = true;
     console.log(`[MongoDB] Connected successfully to host: ${conn.connection.host} (Database: ${conn.connection.name})`);
     return conn;
-  } catch (err: any) {
+  } catch (err) {
     console.error(`\n================== [MONGODB CONNECTION ERROR] ==================`);
     console.error(`Error Message: ${err.message}`);
     console.error(`Configured DATABASE_URL: ${getSafeDbUrl(ENV.DATABASE_URL)}`);
@@ -44,13 +44,13 @@ export async function connectDB(): Promise<typeof mongoose> {
   }
 }
 
-export async function disconnectDB(): Promise<void> {
+export async function disconnectDB() {
   if (!isConnected) return;
   try {
     await mongoose.disconnect();
     isConnected = false;
     console.log('[MongoDB] Disconnected successfully.');
-  } catch (err: any) {
+  } catch (err) {
     console.error('[MongoDB] Error during disconnect:', err.message);
   }
 }
