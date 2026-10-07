@@ -6,6 +6,7 @@ import { errorHandler } from './middleware/error.middleware.js';
 import authRoutes from './routes/auth.routes.js';
 import productRoutes from './routes/product.routes.js';
 import customerRoutes from './routes/customer.routes.js';
+import wishlistRoutes from './routes/wishlist.routes.js';
 
 export const app = express();
 
@@ -35,6 +36,7 @@ const apiRouter = Router();
 apiRouter.use('/auth', authRoutes);
 apiRouter.use('/products', productRoutes);
 apiRouter.use('/customers', customerRoutes);
+apiRouter.use('/wishlist', wishlistRoutes);
 
 // Health check endpoint
 apiRouter.get('/health', (req, res) => {
@@ -54,6 +56,7 @@ app.get('/', (req, res) => {
       auth: '/api/auth',
       products: '/api/products',
       customers: '/api/customers',
+      wishlist: '/api/wishlist',
       health: '/api/health',
     },
   });

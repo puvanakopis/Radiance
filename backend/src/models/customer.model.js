@@ -61,6 +61,12 @@ const CustomerSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    wishlist: [
+      {
+        type: String,
+        ref: 'Product',
+      },
+    ],
   },
   {
     timestamps: true,
