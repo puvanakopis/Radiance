@@ -216,7 +216,11 @@ export default function ProductDetailPage({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-start w-full">
         {/* Gallery column */}
         <div className="lg:col-span-5 w-full">
-          <ProductGallery image={product.image} productName={product.name} />
+          <ProductGallery
+            image={product.image}
+            images={product.images && product.images.length > 0 ? product.images : product.image ? [product.image] : []}
+            productName={product.name}
+          />
         </div>
 
         {/* Product Info Column */}
