@@ -12,10 +12,8 @@ interface ProductGalleryProps {
 }
 
 export const ProductGallery: React.FC<ProductGalleryProps> = ({ image, images, productName }) => {
-  const fallbackImage = 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=1000&q=80';
-  
   // Aggregate all available images into a unified array
-  const rawList = images && images.length > 0 ? images : image ? [image] : [fallbackImage];
+  const rawList = images && images.length > 0 ? images : image ? [image] : [];
   const allImages = Array.from(new Set(rawList.filter(Boolean)));
 
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -29,7 +27,7 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({ image, images, p
   }, []);
 
   // Safe active image
-  const activeImage = allImages[selectedIndex] || allImages[0] || fallbackImage;
+  const activeImage = allImages[selectedIndex] || allImages[0] || image || '';
 
   // Track mouse coordinates for hover zoom
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
