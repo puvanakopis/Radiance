@@ -80,14 +80,14 @@ class WhatsAppService {
     const orderRef = data.orderNumber ? `#${data.orderNumber}` : `#VL-${Date.now().toString().slice(-6)}`;
     const conciseSummary = this.getGroupedItemsSummary(data.items);
 
-    const header = `*✨ RADIANCE ORDER INQUIRY & CONFIRMATION ✨*\n` +
-      `_Beauty, thoughtfully made._\n\n` +
-      `*Order Ref:* ${orderRef}\n` +
-      `*Date:* ${new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}\n` +
+    const header = `RADIANCE ORDER INQUIRY & CONFIRMATION\n` +
+      `Beauty, thoughtfully made.\n\n` +
+      `Order Ref: ${orderRef}\n` +
+      `Date: ${new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}\n` +
       `----------------------------------------\n\n` +
-      `*🛒 ORDER ITEMS SUMMARY:*\n` +
+      `ORDER ITEMS SUMMARY:\n` +
       `${conciseSummary}\n\n` +
-      `*📦 DETAILED ITEM BREAKDOWN:*\n`;
+      `DETAILED ITEM BREAKDOWN:\n`;
 
     const itemsList = data.items
       .map((raw, i) => {
@@ -95,31 +95,31 @@ class WhatsAppService {
         const itemTotal = (item.quantity * item.price).toLocaleString();
         const unitPrice = item.price.toLocaleString();
         const sizeLabel = item.size ? ` (${item.size})` : '';
-        return `${i + 1}. *${item.productName}*${sizeLabel}\n   Qty: ${item.quantity} × LKR ${unitPrice} = LKR ${itemTotal}`;
+        return `${i + 1}. ${item.productName}${sizeLabel}\n   Qty: ${item.quantity} × LKR ${unitPrice} = LKR ${itemTotal}`;
       })
       .join('\n\n');
 
     const shippingText = data.shipping === 0 ? 'FREE (Complimentary)' : `LKR ${data.shipping.toLocaleString()}`;
 
     const pricing = `\n\n----------------------------------------\n` +
-      `*💰 FINANCIAL SUMMARY:*\n` +
+      `FINANCIAL SUMMARY:\n` +
       `• Subtotal: LKR ${data.subtotal.toLocaleString()}\n` +
       (data.discount > 0 ? `• Privilege Discount: -LKR ${data.discount.toLocaleString()}\n` : '') +
       `• Islandwide Delivery: ${shippingText}\n` +
-      `• *FINAL TOTAL: LKR ${data.total.toLocaleString()}*\n` +
-      `• *Payment Mode:* Order via WhatsApp (Cash on Delivery / Direct Bank Transfer)\n` +
+      `• FINAL TOTAL: LKR ${data.total.toLocaleString()}\n` +
+      `• Payment Mode: Order via WhatsApp (Cash on Delivery / Direct Bank Transfer)\n` +
       `----------------------------------------\n\n`;
 
-    const customerDetails = `*📍 CLIENT & DESTINATION DETAILS:*\n` +
-      `• *Name:* ${data.customerName}\n` +
-      `• *Phone:* ${data.customerPhone}\n` +
-      `• *Email:* ${data.customerEmail}\n` +
-      `• *Address:* ${data.address.street}${data.address.apartment ? `, ${data.address.apartment}` : ''}\n` +
-      `• *City / District:* ${data.address.city}, ${data.address.district} (${data.address.postalCode || '00100'})\n` +
-      `• *Country:* ${data.address.country || 'Sri Lanka'}\n` +
-      (data.notes?.trim() ? `• *Special Notes:* ${data.notes.trim()}\n` : '') +
+    const customerDetails = `CLIENT & DESTINATION DETAILS:\n` +
+      `• Name: ${data.customerName}\n` +
+      `• Phone: ${data.customerPhone}\n` +
+      `• Email: ${data.customerEmail}\n` +
+      `• Address: ${data.address.street}${data.address.apartment ? `, ${data.address.apartment}` : ''}\n` +
+      `• City / District: ${data.address.city}, ${data.address.district} (${data.address.postalCode || '00100'})\n` +
+      `• Country: ${data.address.country || 'Sri Lanka'}\n` +
+      (data.notes?.trim() ? `• Special Notes: ${data.notes.trim()}\n` : '') +
       `\n----------------------------------------\n` +
-      `_Please confirm product availability and dispatch schedule. Thank you!_`;
+      `Please confirm product availability and dispatch schedule. Thank you!`;
 
     return header + itemsList + pricing + customerDetails;
   }
