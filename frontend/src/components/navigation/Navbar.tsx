@@ -4,18 +4,16 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Heart, ShoppingBag, User, Menu, X, ChevronDown, ShieldCheck } from 'lucide-react';
+import { Search, Heart, ShoppingBag, User, Menu, X, ShieldCheck } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import { useWishlist } from '../../context/WishlistContext';
 import { useAuth } from '../../context/AuthContext';
 import { AnnouncementBar } from '../layout/AnnouncementBar';
-import { MegaMenu } from './MegaMenu';
 import { SearchOverlay } from './SearchOverlay';
 
 export const Navbar: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   
   const { totalItems, openDrawer } = useCart();
@@ -41,15 +39,14 @@ export const Navbar: React.FC = () => {
   // Close menus on route change
   useEffect(() => {
     setIsMobileMenuOpen(false);
-    setIsMegaMenuOpen(false);
     setIsSearchOpen(false);
   }, [pathname]);
 
   const navLinks = [
-    { label: 'Shop', href: '/products', hasMega: true },
+    { label: 'Shop', href: '/products' },
     { label: 'Skincare', href: '/products?category=Skincare' },
     { label: 'Haircare', href: '/products?category=Haircare' },
-    { label: 'Body', href: '/products?category=Body%20Care' },
+    { label: 'Bodycare', href: '/products?category=Body%20Care' },
     { label: 'About', href: '/about' },
     { label: 'Contact', href: '/contact' },
   ];
@@ -102,16 +99,12 @@ export const Navbar: React.FC = () => {
                     <div
                       key={link.label}
                       className="relative"
-                      onMouseEnter={() => link.hasMega && setIsMegaMenuOpen(true)}
                     >
                       <Link
                         href={link.href}
                         className="text-xs uppercase tracking-[0.16em] font-medium text-[#1A1A1A]/80 hover:text-[#1A1A1A] py-2 transition-colors flex items-center gap-1 group"
                       >
                         <span>{link.label}</span>
-                        {link.hasMega && (
-                          <ChevronDown className={`w-3 h-3 transition-transform duration-300 ${isMegaMenuOpen ? 'rotate-180 text-[#C87D55]' : 'text-[#1A1A1A]/40'}`} />
-                        )}
                         <span className="absolute bottom-0 left-0 w-0 h-[1.5px] bg-[#C87D55] group-hover:w-full transition-all duration-300 ease-out" />
                       </Link>
                     </div>
@@ -173,9 +166,6 @@ export const Navbar: React.FC = () => {
               </div>
             </div>
           </div>
-
-          {/* Mega Menu Dropdown */}
-          <MegaMenu isOpen={isMegaMenuOpen} onClose={() => setIsMegaMenuOpen(false)} />
         </div>
       </header>
 
